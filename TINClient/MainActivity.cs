@@ -41,6 +41,8 @@ namespace TINClient
 
             model.serwerAddress = new InetSocketAddress(InetAddress.GetByAddress(address),22);
 
+            model.interruptPipe = Pipe.Open();
+
 
             button.Click += delegate 
             {

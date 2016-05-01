@@ -17,11 +17,19 @@ namespace TINClient
         public LogicLayer(Model m)
         {
             model = m;
-            securityLayer = new SecurityLayer(model);
+            
         }
         public void Run()
         {
-            securityLayer.Send(new byte[2]);
+            try
+            {
+                securityLayer = new SecurityLayer(model);
+                securityLayer.Send(new byte[2]);
+            }
+            catch (Exception e)
+            {
+
+            }
         }
         Model model;
         SecurityLayer securityLayer;
@@ -71,7 +79,10 @@ namespace TINClient
             socket = SocketChannel.Open();
             socket.ConfigureBlocking(false);
             socketKey = socket.Register(selector, Operations.Connect);
-            pipeKey = model.interruptPipe.Source().Register(selector,Operations.Read);
+            Pipe.SourceChannel pipeSource = model.interruptPipe.Source();
+            pipeSource.ConfigureBlocking(false);
+
+            pipeKey = pipeSource.Register(selector,Operations.Read);
             if (socket.Connect(model.serwerAddress) == false)
             {
                 selector.Select();
