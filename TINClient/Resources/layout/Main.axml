@@ -4,8 +4,46 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
     <Button
-        android:id="@+id/MyButton"
+        android:id="@+id/Connect"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="@string/Hello" />
+        android:text="Connect" />
+    <Button
+        android:id="@+id/Send"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Send" />
+    <Button
+        android:id="@+id/Recive"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Recive" />
+    <Button
+        android:id="@+id/Disconnect"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Disconnect" />
+    <TextView
+        android:text="Address"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView1" />
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/Address"
+        android:text="192.168.0.15" />
+    <TextView
+        android:text="Port"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView2" />
+    <EditText
+        android:inputType="number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/Port"
+        android:text="1266" />
 </LinearLayout>

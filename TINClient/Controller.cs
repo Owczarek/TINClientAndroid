@@ -8,28 +8,64 @@ using System;namespace TINClient
 
     internal class LogicLayer
     {
+        SelectionKey comPipeKey;
+        SelectionKey intPipeKey;
+        Selector selector;
         public LogicLayer(Model m)
         {
             model = m;
-            
+            securityLayer = new SecurityLayer(model);
         }
         public void Run()
         {
             try
             {
-                securityLayer = new SecurityLayer(model);
-                byte[] data = new byte[20];
-                for(byte i=0;i<20;i++)
+                while(true)
                 {
-                    data[i] =(byte) (0x61 + i);
-                }
-                securityLayer.Send(data);
-            }
-            catch (Exception e)
-            {
+                    Selector selector = Selector.Open();
 
+                    Pipe.SourceChannel intPipeSource = model.interruptPipe.Source();
+                    intPipeSource.ConfigureBlocking(false);
+                    intPipeKey = intPipeSource.Register(selector, Operations.Read);
+
+
+                    Pipe.SourceChannel comPipeSource = model.communicationPipe.Source();
+                    intPipeSource.ConfigureBlocking(false);
+                    comPipeKey = intPipeSource.Register(selector, Operations.Read);
+
+
+
+                    selector.Select();
+                    ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
+                    foreach (SelectionKey key in selectedKeys)
+                    {
+                       if (key == intPipeKey)
+                           throw new System.Exception("pipe");
+                    }
+                    ByteBuffer signal = ByteBuffer.Allocate(1);
+                    comPipeSource.Read(signal);
+                    if (signal.Get()==(byte)Signal.Send)
+                    {
+                        byte[] data = new byte[20];
+                        for (byte i = 0; i < 20; i++)
+                        {
+                            data[i] = (byte)(0x61 + i);
+                        }
+                        securityLayer.Send(data);
+                    }
+                }
+            }
+            catch
+            {
+                Disconnect();
             }
         }
+
+        void Disconnect()
+        {
+
+        }
+
         Model model;
         SecurityLayer securityLayer;
     }

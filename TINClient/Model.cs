@@ -11,12 +11,22 @@ using Android.Views;
 using Android.Widget;
 using Java.Nio.Channels;
 using Java.Net;
-
+using System.Threading;
 namespace TINClient
 {
     class Model
     {
         public Pipe interruptPipe;
+        public Pipe communicationPipe;
         public InetSocketAddress serwerAddress;
+        public LogicLayer logicLayer;
+        public Thread connectionThread;
     }
+
+
+    public enum Signal : byte
+    {
+        Send = 0
+    }
+
 }
