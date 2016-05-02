@@ -3,14 +3,8 @@ using Java.Net;
 using Java.Nio;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using System;
-namespace TINClient
+using System;namespace TINClient
 {
-    internal class Controller
-    {
-
-    }
-
 
     internal class LogicLayer
     {
@@ -24,7 +18,12 @@ namespace TINClient
             try
             {
                 securityLayer = new SecurityLayer(model);
-                securityLayer.Send(new byte[2]);
+                byte[] data = new byte[20];
+                for(byte i=0;i<20;i++)
+                {
+                    data[i] =(byte) (0x61 + i);
+                }
+                securityLayer.Send(data);
             }
             catch (Exception e)
             {
@@ -116,18 +115,21 @@ namespace TINClient
             byte[] header= new byte[24];
 
             // so baaad
-            header[3] = (byte)message.Length;
-            header[2] = (byte)(message.Length>>8);
-            header[1] = (byte)(message.Length >> 16);
-            header[0] = (byte)(message.Length >> 24);
+            header[7] = (byte)message.Length;
+            header[6] = (byte)(message.Length>>8);
+            header[5] = (byte)(message.Length >> 16);
+            header[4] = (byte)(message.Length >> 24);
 
-            header[4] = 0;
-            header[5] = 0;
-            header[6] = 0;
-            header[7] = (byte)flag;
+            header[0] = 0;
+            header[1] = 0;
+            header[2] = 0;
+            header[3] = (byte)flag;
 
-            MD5.Create().TransformBlock(message,0,message.Length,header,8);
-
+            MD5 hash = MD5.Create()
+;
+            byte[] hashvalue = hash.ComputeHash(message);
+            for(int i=0;i<16;i++)
+                header[23-i]=hashvalue[i];
 
             int leftBytes = 24;
             while (leftBytes>0) //send header
@@ -148,7 +150,7 @@ namespace TINClient
                 foreach (SelectionKey key in selectedKeys)
                     if (key == pipeKey)
                         throw new System.Exception("pipe");
-                leftBytes -= socket.Write(ByteBuffer.Wrap(header, message.Length - leftBytes, leftBytes));
+                leftBytes -= socket.Write(ByteBuffer.Wrap(message, message.Length - leftBytes, leftBytes));
             }
         }
 

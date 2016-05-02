@@ -32,14 +32,14 @@ namespace TINClient
             //button.Click += delegate { button.Text = string.Format("{0} clicks!", count++); };
             Model model = new Model();
             byte[] address=new byte[4];
-            address[0] = 10;
-            address[1] = 0;
-            address[2] = 2;
-            address[3] = 2;
+            address[0] = 192;
+            address[1] = 168;
+            address[2] = 0;
+            address[3] = 15;
 
 
 
-            model.serwerAddress = new InetSocketAddress(InetAddress.GetByAddress(address),22);
+            model.serwerAddress = new InetSocketAddress(InetAddress.GetByAddress(address),1266);
 
             model.interruptPipe = Pipe.Open();
 
