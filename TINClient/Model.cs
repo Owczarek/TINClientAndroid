@@ -18,6 +18,8 @@ namespace TINClient
     {
         public Pipe interruptPipe;
         public Pipe communicationPipe;
+        public Pipe.SinkChannel communicationPipeSink;
+        public Pipe.SinkChannel interruptPipeSink;
         public InetSocketAddress serwerAddress;
         public LogicLayer logicLayer;
         public Thread connectionThread;

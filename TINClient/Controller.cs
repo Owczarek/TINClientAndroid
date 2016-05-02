@@ -10,17 +10,17 @@ using System;namespace TINClient
     {
         SelectionKey comPipeKey;
         SelectionKey intPipeKey;
-        Selector selector;
         public LogicLayer(Model m)
         {
             model = m;
-            securityLayer = new SecurityLayer(model);
+            
         }
         public void Run()
         {
             try
             {
-                while(true)
+                securityLayer = new SecurityLayer(model);
+                while (true)
                 {
                     Selector selector = Selector.Open();
 
@@ -30,8 +30,8 @@ using System;namespace TINClient
 
 
                     Pipe.SourceChannel comPipeSource = model.communicationPipe.Source();
-                    intPipeSource.ConfigureBlocking(false);
-                    comPipeKey = intPipeSource.Register(selector, Operations.Read);
+                    comPipeSource.ConfigureBlocking(false);
+                    comPipeKey = comPipeSource.Register(selector, Operations.Read);
 
 
 
@@ -42,17 +42,25 @@ using System;namespace TINClient
                        if (key == intPipeKey)
                            throw new System.Exception("pipe");
                     }
-                    ByteBuffer signal = ByteBuffer.Allocate(1);
-                    comPipeSource.Read(signal);
-                    if (signal.Get()==(byte)Signal.Send)
+                    foreach (SelectionKey key in selectedKeys)
                     {
-                        byte[] data = new byte[20];
-                        for (byte i = 0; i < 20; i++)
+                        if (key == comPipeKey)
                         {
-                            data[i] = (byte)(0x61 + i);
+                            ByteBuffer signal = ByteBuffer.Allocate(1);
+                            comPipeSource.Read(signal);
+                            signal.Flip();
+                            if (signal.Get() == (byte)Signal.Send)
+                            {
+                                byte[] data = new byte[20];
+                                for (byte i = 0; i < 20; i++)
+                                {
+                                    data[i] = (byte)(0x61 + i);
+                                }
+                                securityLayer.Send(data);
+                            }
                         }
-                        securityLayer.Send(data);
                     }
+                    
                 }
             }
             catch

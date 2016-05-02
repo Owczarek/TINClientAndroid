@@ -23,6 +23,11 @@ namespace TINClient
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
+
+
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().PermitAll().Build();
+            StrictMode.SetThreadPolicy(policy);
+
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
 
@@ -37,14 +42,9 @@ namespace TINClient
 
             //button.Click += delegate { button.Text = string.Format("{0} clicks!", count++); };
 
+            Model model=new Model();
 
-
-            Model model = new Model();
-            byte[] address = new byte[4];
-            address[0] = 192;
-            address[1] = 168;
-            address[2] = 0;
-            address[3] = 15;
+         
 
 
 
@@ -52,6 +52,9 @@ namespace TINClient
 
             model.interruptPipe = Pipe.Open();
             model.communicationPipe = Pipe.Open();
+            model.communicationPipeSink = model.communicationPipe.Sink();
+            model.interruptPipeSink = model.interruptPipe.Sink();
+
 
             connectButton.Click += delegate
             {
@@ -80,8 +83,9 @@ namespace TINClient
             {
                 if (model.logicLayer != null)
                 {
-                    ByteBuffer signal = ByteBuffer.Allocate(1);
-                    model.interruptPipe.Sink().Write(signal);
+                    Byte[] signal = new byte[1];
+                    signal[0] = 0;
+                    int sent=model.interruptPipe.Sink().Write(ByteBuffer.Wrap(signal));
                     model.connectionThread.Join();
 
                     model.logicLayer = null;
@@ -93,9 +97,11 @@ namespace TINClient
             {
                 if (model.logicLayer != null)
                 {
-                    ByteBuffer signal = ByteBuffer.Allocate(1);
-                    signal.Put((sbyte)(byte)Signal.Send);
-                    model.communicationPipe.Sink().Write(signal);
+                    Byte[] signal = new byte[1];
+                    signal[0] = (byte)Signal.Send;
+                    ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
+                    int sent=model.communicationPipeSink.Write(sigBuf);
+                 //   int sent=model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
                 }
 
             };
