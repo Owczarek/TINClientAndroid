@@ -20,6 +20,8 @@ namespace TINClient
         public Pipe communicationPipe;
         public Pipe.SinkChannel communicationPipeSink;
         public Pipe.SinkChannel interruptPipeSink;
+        public Pipe.SourceChannel interruptPipeSource;
+        public Pipe.SourceChannel communicationPipeSource;
         public InetSocketAddress serwerAddress;
         public LogicLayer logicLayer;
         public Thread connectionThread;

@@ -65,13 +65,15 @@ using System;namespace TINClient
             }
             catch
             {
+                
                 Disconnect();
             }
         }
 
         void Disconnect()
         {
-
+            model.interruptPipeSource.Read(ByteBuffer.Allocate(10));
+            model.communicationPipeSource.Read(ByteBuffer.Allocate(10));
         }
 
         Model model;

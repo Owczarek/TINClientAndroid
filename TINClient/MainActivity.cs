@@ -43,22 +43,21 @@ namespace TINClient
 
             Model model=new Model();
 
-         
-
-
-
-
-
-            model.interruptPipe = Pipe.Open();
-            model.communicationPipe = Pipe.Open();
-            model.communicationPipeSink = model.communicationPipe.Sink();
-            model.interruptPipeSink = model.interruptPipe.Sink();
 
 
             connectButton.Click += delegate
             {
                 if (model.logicLayer == null)
                 {
+
+                    model.interruptPipe = Pipe.Open();
+                    model.communicationPipe = Pipe.Open();
+                    model.communicationPipeSink = model.communicationPipe.Sink();
+                    model.interruptPipeSink = model.interruptPipe.Sink();
+                    model.communicationPipeSource = model.communicationPipe.Source();
+                    model.interruptPipeSource = model.interruptPipe.Source();
+                    model.interruptPipeSource.ConfigureBlocking(false);
+                    model.communicationPipeSource.ConfigureBlocking(false);
 
 
 
@@ -85,9 +84,15 @@ namespace TINClient
                     Byte[] signal = new byte[1];
                     signal[0] = 0;
                     int sent=model.interruptPipe.Sink().Write(ByteBuffer.Wrap(signal));
+
                     model.connectionThread.Join();
+                    model.connectionThread = null;
 
                     model.logicLayer = null;
+                    model.communicationPipe.Dispose();
+                    model.communicationPipe = null;
+                    model.interruptPipe.Dispose();
+                    model.interruptPipe = null;
                 }
 
             };
