@@ -101,7 +101,7 @@ using System;namespace TINClient
     }
 
 
-    internal class TCPLayer
+    internal unsafe class TCPLayer
     {
         //  unsafe struct Header
         //  {
@@ -147,54 +147,62 @@ using System;namespace TINClient
         }
         public void Send(byte[] message)
         {
-            SendFrame(message,1);
+            int sent = 0;
+            while(sent<message.Length)
+            {
+                if(message.Length-sent>model.FrameSize)
+                {
+                    SendFrame(message, ByteBuffer.Wrap(message,sent,model.FrameSize), 0);
+                    sent += model.FrameSize;
+                }
+                else
+                {
+                    SendFrame(message, ByteBuffer.Wrap(message, sent, message.Length - sent), 1);
+                    sent = message.Length;
+                }
+            }
+
+            SendFrame(message,ByteBuffer.Wrap(message),1);
         }
 
-        void SendFrame(byte[] message,int flag)
+        void SendFrame(byte[] message,ByteBuffer messageBuffer,int flag)
         {
             Selector selector = Selector.Open();
             SelectionKey socketKey = socket.Register(selector, Operations.Write);
             pipeKey = model.interruptPipe.Source().Register(selector, Operations.Read);
 
-            byte[] header= new byte[24];
-
+            ByteBuffer header = ByteBuffer.Allocate(24);
+            header.Order(ByteOrder.BigEndian);
             // so baaad
-            header[7] = (byte)message.Length;
-            header[6] = (byte)(message.Length>>8);
-            header[5] = (byte)(message.Length >> 16);
-            header[4] = (byte)(message.Length >> 24);
-
-            header[0] = 0;
-            header[1] = 0;
-            header[2] = 0;
-            header[3] = (byte)flag;
-
-            MD5 hash = MD5.Create()
-;
-            byte[] hashvalue = hash.ComputeHash(message);
-            for(int i=0;i<16;i++)
-                header[23-i]=hashvalue[i];
-
-            int leftBytes = 24;
-            while (leftBytes>0) //send header
+            header.PutInt(flag);
+            int a = messageBuffer.ArrayOffset();
+            int b = messageBuffer.Position();
+            int c = messageBuffer.Limit();
+            header.PutInt(messageBuffer.Remaining());
+            MD5 hash = MD5.Create()  ;
+            byte[] hashvalue = hash.ComputeHash(message,messageBuffer.ArrayOffset(),messageBuffer.Capacity());
+            for (int i = 0; i < 16; i++)
+                header.Put((sbyte)hashvalue[15 - i]);
+            header.Rewind();
+            while (header.HasRemaining) //send header
             {
                 selector.Select();
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
                 foreach (SelectionKey key in selectedKeys)
                     if(key == pipeKey)
                         throw new System.Exception("pipe");
-                leftBytes-=socket.Write(ByteBuffer.Wrap(header, 24 - leftBytes, leftBytes));
+                socket.Write(header);
             }
-
-            leftBytes = message.Length;
-            while (leftBytes > 0) //send payload
+            // ByteBuffer sendingBuff = ByteBuffer.Wrap(message);
+            messageBuffer.Rewind();
+            while (messageBuffer.HasRemaining) //send payload
             {
                 selector.Select();
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
                 foreach (SelectionKey key in selectedKeys)
                     if (key == pipeKey)
                         throw new System.Exception("pipe");
-                leftBytes -= socket.Write(ByteBuffer.Wrap(message, message.Length - leftBytes, leftBytes));
+                socket.Write(messageBuffer);
             }
         }
 

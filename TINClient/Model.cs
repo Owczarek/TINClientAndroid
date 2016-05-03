@@ -23,6 +23,7 @@ namespace TINClient
         public InetSocketAddress serwerAddress;
         public LogicLayer logicLayer;
         public Thread connectionThread;
+        public int FrameSize=5;
     }
 
 

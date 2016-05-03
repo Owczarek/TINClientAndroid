@@ -18,7 +18,6 @@ namespace TINClient
     [Activity(Label = "TINClient", MainLauncher = true, Icon = "@drawable/icon")]
     public class MainActivity : Activity
     {
-        int count = 1;
 
         protected override void OnCreate(Bundle bundle)
         {
