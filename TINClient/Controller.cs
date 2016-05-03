@@ -49,7 +49,8 @@ using System;namespace TINClient
                             ByteBuffer signal = ByteBuffer.Allocate(1);
                             comPipeSource.Read(signal);
                             signal.Flip();
-                            if (signal.Get() == (byte)Signal.Send)
+                            byte signalByte = (byte)signal.Get();
+                            if (signalByte == (byte)Signal.Send)
                             {
                                 byte[] data = new byte[20];
                                 for (byte i = 0; i < 20; i++)
@@ -57,6 +58,10 @@ using System;namespace TINClient
                                     data[i] = (byte)(0x61 + i);
                                 }
                                 securityLayer.Send(data);
+                            }
+                            if (signalByte == (byte)Signal.Recive)
+                            {
+                                securityLayer.Recive();
                             }
                         }
                     }
@@ -95,7 +100,7 @@ using System;namespace TINClient
             tcpLayer.Send(message);
         }
 
-        public ByteBuffer Recive()
+        public List<byte> Recive()
         {
             return tcpLayer.Recive();
         }
@@ -115,19 +120,18 @@ using System;namespace TINClient
         SocketChannel socket;
         //   Selector selector;
         //   SelectionKey socketKey;
-        SelectionKey pipeKey;
+        
         public TCPLayer(Model m)
         {
             model = m;
+            SelectionKey pipeKey;
             Selector selector=Selector.Open();
             SelectionKey socketKey;
             socket = SocketChannel.Open();
             socket.ConfigureBlocking(false);
             socketKey = socket.Register(selector, Operations.Connect);
-            Pipe.SourceChannel pipeSource = model.interruptPipe.Source();
-            pipeSource.ConfigureBlocking(false);
 
-            pipeKey = pipeSource.Register(selector,Operations.Read);
+            pipeKey = model.interruptPipeSource.Register(selector,Operations.Read);
             if (socket.Connect(model.serwerAddress) == false)
             {
                 selector.Select();
@@ -169,6 +173,7 @@ using System;namespace TINClient
 
         void SendFrame(byte[] message,ByteBuffer messageBuffer,int flag)
         {
+            SelectionKey pipeKey;
             Selector selector = Selector.Open();
             SelectionKey socketKey = socket.Register(selector, Operations.Write);
             pipeKey = model.interruptPipe.Source().Register(selector, Operations.Read);
@@ -177,9 +182,6 @@ using System;namespace TINClient
             header.Order(ByteOrder.BigEndian);
             // so baaad
             header.PutInt(flag);
-            int a = messageBuffer.ArrayOffset();
-            int b = messageBuffer.Position();
-            int c = messageBuffer.Limit();
             header.PutInt(messageBuffer.Remaining());
             MD5 hash = MD5.Create()  ;
             byte[] hashvalue = hash.ComputeHash(message,messageBuffer.ArrayOffset(),messageBuffer.Capacity());
@@ -209,10 +211,61 @@ using System;namespace TINClient
         }
 
 
-        public ByteBuffer Recive()
+        public List<byte> Recive()
         {
-            return ByteBuffer.Allocate(1);
+            List<byte> returned = new List<byte>();
+            KeyValuePair<int, byte[]>  recived = ReciveFrame();
+            int flag = recived.Key;
+            returned.AddRange(recived.Value);
+            while (flag==0)
+            {
+                recived = ReciveFrame();
+                returned.AddRange(recived.Value);
+            }
+            return returned;
         }
+
+        KeyValuePair<int,byte[]> ReciveFrame()
+        {
+            Selector selector = Selector.Open();
+            SelectionKey pipeKey = model.interruptPipeSource.Register(selector, Operations.Read); ;
+            SelectionKey socketKey = socket.Register(selector, Operations.Read);
+
+            ByteBuffer header = ByteBuffer.Allocate(24);
+
+            while (header.HasRemaining) //recive header
+            {
+                selector.Select();
+                ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
+                foreach (SelectionKey key in selectedKeys)
+                    if (key == pipeKey)
+                        throw new System.Exception("pipe");
+                socket.Read(header);
+            }
+            header.Rewind();
+            int flag = header.Int;
+            int length = header.Int;
+            byte[] hash = new byte[16];
+            header.Get(hash);
+
+            byte[] messageFrame = new byte[length];
+            ByteBuffer messageFrameBuf = ByteBuffer.Wrap(messageFrame);
+
+            while (messageFrameBuf.HasRemaining) //recive message
+            {
+                selector.Select();
+                ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
+                foreach (SelectionKey key in selectedKeys)
+                    if (key == pipeKey)
+                        throw new System.Exception("pipe");
+                socket.Read(messageFrameBuf);
+            }
+
+
+
+            return new KeyValuePair<int, byte[]>(flag, messageFrame);
+        }
+
     }
 
 }

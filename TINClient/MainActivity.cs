@@ -109,7 +109,18 @@ namespace TINClient
                 }
 
             };
+            reciveButton.Click += delegate
+            {
+                if (model.logicLayer != null)
+                {
+                    Byte[] signal = new byte[1];
+                    signal[0] = (byte)Signal.Recive;
+                    ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
+                    int sent = model.communicationPipeSink.Write(sigBuf);
+                    //   int sent=model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
+                }
 
+            };
 
         }
     }

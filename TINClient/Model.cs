@@ -31,7 +31,8 @@ namespace TINClient
 
     public enum Signal : byte
     {
-        Send = 0
+        Send = 0,
+        Recive =1
     }
 
 }
