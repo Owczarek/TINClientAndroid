@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using Android.Widget;
 using Android.App;
 using Android.Appwidget;
+using System.Linq;
 namespace TINClient
 {
 
@@ -23,6 +24,7 @@ namespace TINClient
             try
             {
                 securityLayer = new SecurityLayer(model);
+                model.mainActivity.Output("connected?");
                 while (true)
                 {
                     Selector selector = Selector.Open();
@@ -74,7 +76,7 @@ namespace TINClient
             }
             catch (System.Exception e)
             {
-                
+                string exception = e.Message;
                 Disconnect();
             }
         }
@@ -82,6 +84,8 @@ namespace TINClient
         void Disconnect()
         {
             securityLayer = null;
+            model.DestroyConnection();
+            
         }
 
         Model model;
@@ -266,7 +270,11 @@ namespace TINClient
                 socket.Read(messageFrameBuf);
             }
 
-
+            MD5 md5 = MD5.Create();
+            byte[] targetHash=md5.ComputeHash(messageFrame);
+            for (int i = 0; i < 6; i++)
+                if (targetHash[i] != hash[i])
+                    throw new System.Exception("checksum");
 
             return new KeyValuePair<int, byte[]>(flag, messageFrame);
         }

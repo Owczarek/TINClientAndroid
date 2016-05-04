@@ -27,8 +27,19 @@ namespace TINClient
         public Thread connectionThread;
         public int FrameSize=5;
         public MainActivity mainActivity;
+        public void DestroyConnection()
+        {
+            logicLayer = null;
+            communicationPipe.Dispose();
+            communicationPipe = null;
+            interruptPipe.Dispose();
+            interruptPipe = null;
+            mainActivity.RunOnUiThread(() => { connectionThread.Join(); connectionThread = null; });
+            mainActivity.Output("disconnected");
+        }
     }
 
+    
 
     public enum Signal : byte
     {

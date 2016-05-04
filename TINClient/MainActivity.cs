@@ -93,14 +93,7 @@ namespace TINClient
                     signal[0] = 0;
                     int sent=model.interruptPipe.Sink().Write(ByteBuffer.Wrap(signal));
 
-                    model.connectionThread.Join();
-                    model.connectionThread = null;
-
-                    model.logicLayer = null;
-                    model.communicationPipe.Dispose();
-                    model.communicationPipe = null;
-                    model.interruptPipe.Dispose();
-                    model.interruptPipe = null;
+                    
                 }
 
             };
