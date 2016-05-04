@@ -8,7 +8,6 @@ using Android.OS;
 //using Java.Lang;
 //using System.Net.Sockets;
 using System.IO;
-using Mono.Unix.Native;
 using Java.Nio.Channels;
 using System.Threading;
 using Java.Net;
@@ -18,6 +17,14 @@ namespace TINClient
     [Activity(Label = "TINClient", MainLauncher = true, Icon = "@drawable/icon")]
     public class MainActivity : Activity
     {
+
+        Button connectButton;
+        Button sendButton;
+        Button reciveButton;
+        Button disconnectButton;
+        EditText addressText;
+        EditText portText;
+        TextView outputText;
 
         protected override void OnCreate(Bundle bundle)
         {
@@ -32,17 +39,18 @@ namespace TINClient
 
             // Get our button from the layout resource,
             // and attach an event to it
-            Button connectButton = FindViewById<Button>(Resource.Id.Connect);
-            Button sendButton = FindViewById<Button>(Resource.Id.Send);
-            Button reciveButton = FindViewById<Button>(Resource.Id.Recive);
-            Button disconnectButton = FindViewById<Button>(Resource.Id.Disconnect);
-            EditText addressText = FindViewById<EditText>(Resource.Id.Address);
-            EditText portText = FindViewById<EditText>(Resource.Id.Port);
+             connectButton = FindViewById<Button>(Resource.Id.Connect);
+             sendButton = FindViewById<Button>(Resource.Id.Send);
+             reciveButton = FindViewById<Button>(Resource.Id.Recive);
+             disconnectButton = FindViewById<Button>(Resource.Id.Disconnect);
+             addressText = FindViewById<EditText>(Resource.Id.Address);
+             portText = FindViewById<EditText>(Resource.Id.Port);
+             outputText = FindViewById<TextView>(Resource.Id.Output);
 
             //button.Click += delegate { button.Text = string.Format("{0} clicks!", count++); };
 
             Model model=new Model();
-
+            model.mainActivity = this;
 
 
             connectButton.Click += delegate
@@ -122,6 +130,13 @@ namespace TINClient
 
             };
 
+
+            
+
+        }
+        public void Output(string a)
+        {
+            RunOnUiThread(() => outputText.Text = a);
         }
     }
 }

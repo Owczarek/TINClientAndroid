@@ -3,7 +3,10 @@ using Java.Net;
 using Java.Nio;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using System;namespace TINClient
+using Android.Widget;
+using Android.App;
+using Android.Appwidget;
+namespace TINClient
 {
 
     internal class LogicLayer
@@ -52,8 +55,8 @@ using System;namespace TINClient
                             byte signalByte = (byte)signal.Get();
                             if (signalByte == (byte)Signal.Send)
                             {
-                                byte[] data = new byte[20];
-                                for (byte i = 0; i < 20; i++)
+                                byte[] data = new byte[19];
+                                for (byte i = 0; i < 19; i++)
                                 {
                                     data[i] = (byte)(0x61 + i);
                                 }
@@ -61,14 +64,15 @@ using System;namespace TINClient
                             }
                             if (signalByte == (byte)Signal.Recive)
                             {
-                                securityLayer.Recive();
+                                List<byte> output = securityLayer.Recive();
+                                model.mainActivity.Output(System.Text.Encoding.ASCII.GetString(output.ToArray()));
                             }
                         }
                     }
                     
                 }
             }
-            catch
+            catch (System.Exception e)
             {
                 
                 Disconnect();
@@ -77,8 +81,7 @@ using System;namespace TINClient
 
         void Disconnect()
         {
-            model.interruptPipeSource.Read(ByteBuffer.Allocate(10));
-            model.communicationPipeSource.Read(ByteBuffer.Allocate(10));
+            securityLayer = null;
         }
 
         Model model;
@@ -166,6 +169,8 @@ using System;namespace TINClient
                     SendFrame(message, ByteBuffer.Wrap(message, sent, message.Length - sent), 1);
                     sent = message.Length;
                 }
+                model.mainActivity.Output("sent " + sent + " bytes");
+                System.Threading.Thread.Sleep(1000);
             }
 
             SendFrame(message,ByteBuffer.Wrap(message),1);

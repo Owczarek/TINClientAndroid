@@ -69,6 +69,9 @@ namespace TINClient
 			// aapt resource value: 0x7f050003
 			public const int Disconnect = 2131034115;
 			
+			// aapt resource value: 0x7f050008
+			public const int Output = 2131034120;
+			
 			// aapt resource value: 0x7f050007
 			public const int Port = 2131034119;
 			

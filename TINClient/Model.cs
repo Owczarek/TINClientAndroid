@@ -26,6 +26,7 @@ namespace TINClient
         public LogicLayer logicLayer;
         public Thread connectionThread;
         public int FrameSize=5;
+        public MainActivity mainActivity;
     }
 
 
