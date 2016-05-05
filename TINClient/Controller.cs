@@ -230,6 +230,7 @@ namespace TINClient
             {
                 recived = ReciveFrame();
                 returned.AddRange(recived.Value);
+                flag = recived.Key;
             }
             return returned;
         }
@@ -258,7 +259,7 @@ namespace TINClient
             header.Get(hash);
 
             byte[] messageFrame = new byte[length];
-            ByteBuffer messageFrameBuf = ByteBuffer.Wrap(messageFrame);
+            ByteBuffer messageFrameBuf = ByteBuffer.Allocate(length);
 
             while (messageFrameBuf.HasRemaining) //recive message
             {
@@ -269,12 +270,13 @@ namespace TINClient
                         throw new System.Exception("pipe");
                 socket.Read(messageFrameBuf);
             }
-
+            messageFrameBuf.Rewind();
+            messageFrameBuf.Get(messageFrame);
             MD5 md5 = MD5.Create();
             byte[] targetHash=md5.ComputeHash(messageFrame);
             for (int i = 0; i < 6; i++)
-                if (targetHash[i] != hash[i])
-                    throw new System.Exception("checksum");
+                if (targetHash[i] != hash[i]) ;//for now
+                    //throw new System.Exception("checksum");
 
             return new KeyValuePair<int, byte[]>(flag, messageFrame);
         }
