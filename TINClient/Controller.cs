@@ -97,19 +97,61 @@ namespace TINClient
     {
         Model model;
         TCPLayer tcpLayer;
+       // byte[] serverRSA;
+        ICryptoTransform symmetricEncryptor;
+        ICryptoTransform symmetricDecryptor;
+
         public SecurityLayer(Model m)
         {
             model = m;
             tcpLayer = new TCPLayer(model);
+
+            tcpLayer.Send(new byte[1] {0});
+
+            List<byte> data = tcpLayer.Recive();
+            if (data[0] != 1)
+                throw (new System.Exception("security"));
+           // serverRSA = new byte[128];
+          //  data.CopyTo(1,serverRSA,0,128);
+
+            Aes sessionCypher = AesCryptoServiceProvider.Create();
+            sessionCypher.Mode = CipherMode.CFB;
+            sessionCypher.GenerateKey();
+            sessionCypher.IV = new byte[sessionCypher.BlockSize/8];
+
+            symmetricEncryptor = sessionCypher.CreateEncryptor();
+            symmetricDecryptor = sessionCypher.CreateDecryptor();
+
+            RSACryptoServiceProvider rsaCypher = new RSACryptoServiceProvider();
+            rsaCypher.KeySize = 1024;  // or something
+            RSAParameters rsaKey = new RSAParameters();
+
+            //rsaKey.
+
+            rsaCypher.ImportParameters(rsaKey);
+
+
+            byte[] frameToSend;
+            frameToSend = new byte[1 + sessionCypher.KeySize];
+            frameToSend[0] = 2;
+            sessionCypher.Key.CopyTo(frameToSend, 1);
+
         }
         public void Send(byte[] message)
         {
-            tcpLayer.Send(message);
+            byte[] encryptedMessage = new byte[message.Length + 1];
+            encryptedMessage[0] = 3;
+            symmetricEncryptor.TransformBlock(message, 0, message.Length, encryptedMessage, 1);
+            tcpLayer.Send(encryptedMessage);
         }
 
         public List<byte> Recive()
         {
-            return tcpLayer.Recive();
+            List<byte> message = tcpLayer.Recive();
+            if (message[0] != 3)
+                throw (new System.Exception("security"));
+            message.RemoveAt(0);
+            return message;
         }
 
     }
@@ -195,7 +237,7 @@ namespace TINClient
             MD5 hash = MD5.Create()  ;
             byte[] hashvalue = hash.ComputeHash(message,messageBuffer.ArrayOffset(),messageBuffer.Capacity());
             for (int i = 0; i < 16; i++)
-                header.Put((sbyte)hashvalue[15 - i]);
+                header.Put((sbyte)hashvalue[i]);
             header.Rewind();
             while (header.HasRemaining) //send header
             {
