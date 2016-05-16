@@ -106,7 +106,7 @@ namespace TINClient
             model = m;
             tcpLayer = new TCPLayer(model);
 
-            tcpLayer.Send(new byte[1] {0});
+           /* tcpLayer.Send(new byte[1] {0});
 
             List<byte> data = tcpLayer.Recive();
             if (data[0] != 1)
@@ -134,15 +134,17 @@ namespace TINClient
             byte[] frameToSend;
             frameToSend = new byte[1 + sessionCypher.KeySize];
             frameToSend[0] = 2;
-            sessionCypher.Key.CopyTo(frameToSend, 1);
+            sessionCypher.Key.CopyTo(frameToSend, 1);*/
 
         }
         public void Send(byte[] message)
         {
-            byte[] encryptedMessage = new byte[message.Length + 1];
-            encryptedMessage[0] = 3;
-            symmetricEncryptor.TransformBlock(message, 0, message.Length, encryptedMessage, 1);
-            tcpLayer.Send(encryptedMessage);
+            /* byte[] encryptedMessage = new byte[message.Length + 1];
+             encryptedMessage[0] = 3;
+             symmetricEncryptor.TransformBlock(message, 0, message.Length, encryptedMessage, 1);
+             tcpLayer.Send(encryptedMessage);*/
+
+            tcpLayer.Send(message);
         }
 
         public List<byte> Recive()
@@ -228,7 +230,7 @@ namespace TINClient
             Selector selector = Selector.Open();
             SelectionKey socketKey = socket.Register(selector, Operations.Write);
             pipeKey = model.interruptPipe.Source().Register(selector, Operations.Read);
-
+            messageBuffer.Mark();
             ByteBuffer header = ByteBuffer.Allocate(24);
             header.Order(ByteOrder.BigEndian);
             // so baaad
@@ -249,7 +251,7 @@ namespace TINClient
                 socket.Write(header);
             }
             // ByteBuffer sendingBuff = ByteBuffer.Wrap(message);
-            messageBuffer.Rewind();
+            messageBuffer.Reset();
             while (messageBuffer.HasRemaining) //send payload
             {
                 selector.Select();
