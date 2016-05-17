@@ -135,7 +135,6 @@ namespace TINClient
             Aes sessionCypher = AesCryptoServiceProvider.Create();
             sessionCypher.Mode = CipherMode.ECB;
             sessionCypher.GenerateKey();
-
             symmetricEncryptor = sessionCypher.CreateEncryptor();
             symmetricDecryptor = sessionCypher.CreateDecryptor();
 
@@ -152,12 +151,11 @@ namespace TINClient
         }
         public void Send(byte[] message)
         {
-             byte[] encryptedMessage = new byte[message.Length + 1];
-             encryptedMessage[0] = 3;
-             symmetricEncryptor.TransformBlock(message, 0, message.Length, encryptedMessage, 1);
-             tcpLayer.Send(encryptedMessage);
 
-            tcpLayer.Send(message);
+             byte[] encryptedMessage = new byte[((message.Length+15)/16)*16 + 1];
+             encryptedMessage[0] = 3;
+             symmetricEncryptor.TransformFinalBlock(message, 0, message.Length).CopyTo(encryptedMessage, 1);
+             tcpLayer.Send(encryptedMessage);
         }
 
         public List<byte> Recive()
