@@ -106,43 +106,56 @@ namespace TINClient
             model = m;
             tcpLayer = new TCPLayer(model);
 
-           /* tcpLayer.Send(new byte[1] {0});
+            tcpLayer.Send(new byte[1] {0});
 
-            List<byte> data = tcpLayer.Recive();
-            if (data[0] != 1)
-                throw (new System.Exception("security"));
            // serverRSA = new byte[128];
           //  data.CopyTo(1,serverRSA,0,128);
 
+            List<byte> modulusData= tcpLayer.Recive();
+            List<byte> publicKeyData = tcpLayer.Recive();
+
+            if (modulusData[0] != 1)
+                throw (new System.Exception("security"));
+            modulusData.RemoveAt(0);
+
+            if (publicKeyData[0] != 1)
+                throw (new System.Exception("security"));
+            publicKeyData.RemoveAt(0);
+
+
+            RSAParameters rsaKey = new RSAParameters();
+
+            rsaKey.Modulus = modulusData.ToArray();
+            rsaKey.Exponent = publicKeyData.ToArray();
+
+            RSACryptoServiceProvider rsaCypher = new RSACryptoServiceProvider();
+
+            rsaCypher.ImportParameters(rsaKey);
+
             Aes sessionCypher = AesCryptoServiceProvider.Create();
-            sessionCypher.Mode = CipherMode.CFB;
+            sessionCypher.Mode = CipherMode.ECB;
             sessionCypher.GenerateKey();
-            sessionCypher.IV = new byte[sessionCypher.BlockSize/8];
 
             symmetricEncryptor = sessionCypher.CreateEncryptor();
             symmetricDecryptor = sessionCypher.CreateDecryptor();
 
-            RSACryptoServiceProvider rsaCypher = new RSACryptoServiceProvider();
-            rsaCypher.KeySize = 1024;  // or something
-            RSAParameters rsaKey = new RSAParameters();
-
-            //rsaKey.
-
-            rsaCypher.ImportParameters(rsaKey);
+            byte[] encryptedKey = rsaCypher.Encrypt(sessionCypher.Key, false);
 
 
             byte[] frameToSend;
-            frameToSend = new byte[1 + sessionCypher.KeySize];
+            frameToSend = new byte[1 + encryptedKey.Length];
             frameToSend[0] = 2;
-            sessionCypher.Key.CopyTo(frameToSend, 1);*/
+            encryptedKey.CopyTo(frameToSend, 1);
+
+            tcpLayer.Send(frameToSend);
 
         }
         public void Send(byte[] message)
         {
-            /* byte[] encryptedMessage = new byte[message.Length + 1];
+             byte[] encryptedMessage = new byte[message.Length + 1];
              encryptedMessage[0] = 3;
              symmetricEncryptor.TransformBlock(message, 0, message.Length, encryptedMessage, 1);
-             tcpLayer.Send(encryptedMessage);*/
+             tcpLayer.Send(encryptedMessage);
 
             tcpLayer.Send(message);
         }
@@ -153,7 +166,10 @@ namespace TINClient
             if (message[0] != 3)
                 throw (new System.Exception("security"));
             message.RemoveAt(0);
-            return message;
+            byte[] decryptedMessage=symmetricDecryptor.TransformFinalBlock(message.ToArray(), 0, message.Count);
+            List<byte> returned = new List<byte>();
+            returned.AddRange(decryptedMessage);
+            return returned;
         }
 
     }
@@ -220,8 +236,6 @@ namespace TINClient
                 model.mainActivity.Output("sent " + sent + " bytes");
                 System.Threading.Thread.Sleep(1000);
             }
-
-            SendFrame(message,ByteBuffer.Wrap(message),1);
         }
 
         void SendFrame(byte[] message,ByteBuffer messageBuffer,int flag)
