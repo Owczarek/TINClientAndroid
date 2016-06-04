@@ -7,41 +7,72 @@ using Android.Widget;
 using Android.App;
 using Android.Appwidget;
 using System.Linq;
+using Java.Math;
 namespace TINClient
 {
 
-    internal class LogicLayer
+    public class LogicLayer
     {
         SelectionKey comPipeKey;
         SelectionKey intPipeKey;
-        public LogicLayer(Model m)
+        public LogicLayer()
         {
-            model = m;
+            
             
         }
         public void Run()
         {
             try
             {
-                securityLayer = new SecurityLayer(model);
-                model.mainActivity.Output("connected?");
+                Selector selector = Selector.Open();
+
+                Pipe.SourceChannel intPipeSource = Model.interruptPipe.Source();
+                intPipeSource.ConfigureBlocking(false);
+                intPipeKey = intPipeSource.Register(selector, Operations.Read);
+
+
+                Pipe.SourceChannel comPipeSource = Model.communicationPipe.Source();
+                comPipeSource.ConfigureBlocking(false);
+                comPipeKey = comPipeSource.Register(selector, Operations.Read);
+
+
+
+                // shouldent really be here - it's same as lower
+                selector.Select();
+                ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
+
+
+                foreach (SelectionKey key in selectedKeys)
+                {
+                    if (key == comPipeKey)
+                    {
+                        ByteBuffer signal = ByteBuffer.Allocate(1);
+                        comPipeSource.Read(signal);
+                        signal.Flip();
+                        byte signalByte = (byte)signal.Get();
+                        if (signalByte == (byte)Signal.Connect)
+                            break;
+                        else
+                            throw new System.Exception("wrong");
+                    }
+                }
+
+
+
+
+
+
+
+                        securityLayer = new SecurityLayer(Model);
+                Model.mainActivity.Output("connected?");
                 while (true)
                 {
-                    Selector selector = Selector.Open();
-
-                    Pipe.SourceChannel intPipeSource = model.interruptPipe.Source();
-                    intPipeSource.ConfigureBlocking(false);
-                    intPipeKey = intPipeSource.Register(selector, Operations.Read);
-
-
-                    Pipe.SourceChannel comPipeSource = model.communicationPipe.Source();
-                    comPipeSource.ConfigureBlocking(false);
-                    comPipeKey = comPipeSource.Register(selector, Operations.Read);
+                    
 
 
 
                     selector.Select();
-                    ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
+                   /* ICollection<SelectionKey>*/ selectedKeys = selector.SelectedKeys();
                     foreach (SelectionKey key in selectedKeys)
                     {
                        if (key == intPipeKey)
@@ -67,7 +98,7 @@ namespace TINClient
                             if (signalByte == (byte)Signal.Recive)
                             {
                                 List<byte> output = securityLayer.Recive();
-                                model.mainActivity.Output(System.Text.Encoding.ASCII.GetString(output.ToArray()));
+                                Model.mainActivity.Output(System.Text.Encoding.ASCII.GetString(output.ToArray()));
                             }
                         }
                     }
@@ -79,23 +110,80 @@ namespace TINClient
                 string exception = e.Message;
                 Disconnect();
             }
+
+
+            
+
+
+
+
         }
 
         void Disconnect()
         {
             securityLayer = null;
-            model.DestroyConnection();
+            Model.DestroyConnection();
             
         }
 
-        Model model;
+        void SignIn()
+        {
+            SendFrame(0, Model.username);//or + \0
+            byte[] message;
+            if(ReciveFrame(out message) !=1)
+                throw (new System.Exception("wrong message"));
+            ByteBuffer buf = ByteBuffer.Wrap(message);
+           
+
+
+        }
+
+        void SendFrame(byte messageType,byte[] message)///should really be optimized  not to copy frame over again
+        {
+            byte[] frame = new byte[5 + message.Length];
+            frame[0] = messageType;
+            frame[4] = (byte)message.Length;//i'm bad person
+            frame[3] = (byte)(message.Length>>1);//i'm bad person
+            frame[2] = (byte)(message.Length >> 2);//i'm bad person
+            frame[1] = (byte)(message.Length >> 3);//i'm bad person
+            message.CopyTo(frame, 5);
+            securityLayer.Send(frame);
+        }
+
+        int ReciveFrame(out byte[] message)///returns - messagetype //to change drasticly
+        {
+            List<byte> frame = securityLayer.Recive();
+
+            int messageType = frame[0];
+            frame.RemoveAt(0);
+
+            int length=0;
+            length |= ((int)frame[0])<<3;//i'm bad person
+            length |= ((int)frame[1])<<2;//i'm bad person
+            length |= ((int)frame[2])<<1;//i'm bad person
+            length |= ((int)frame[3]);//i'm bad person
+
+            frame.RemoveAt(3);
+            frame.RemoveAt(2);
+            frame.RemoveAt(1);
+            frame.RemoveAt(0);
+
+            while (length < frame.Count)
+                frame.RemoveAt(frame.Count - 1);
+
+            message = frame.ToArray();
+            return messageType;
+
+        }
+
+        Model Model;
         SecurityLayer securityLayer;
     }
 
 
     internal class SecurityLayer
     {
-        Model model;
+        Model Model;
         TCPLayer tcpLayer;
        // byte[] serverRSA;
         ICryptoTransform symmetricEncryptor;
@@ -103,8 +191,8 @@ namespace TINClient
 
         public SecurityLayer(Model m)
         {
-            model = m;
-            tcpLayer = new TCPLayer(model);
+            Model = m;
+            tcpLayer = new TCPLayer(Model);
 
             tcpLayer.Send(new byte[1] {0});
 
@@ -181,14 +269,14 @@ namespace TINClient
         //       public int lenght;
         //      public byte[16] checksum;
         //  }
-        Model model;
+        Model Model;
         SocketChannel socket;
         //   Selector selector;
         //   SelectionKey socketKey;
         
         public TCPLayer(Model m)
         {
-            model = m;
+            Model = m;
             SelectionKey pipeKey;
             Selector selector=Selector.Open();
             SelectionKey socketKey;
@@ -196,8 +284,8 @@ namespace TINClient
             socket.ConfigureBlocking(false);
             socketKey = socket.Register(selector, Operations.Connect);
 
-            pipeKey = model.interruptPipeSource.Register(selector,Operations.Read);
-            if (socket.Connect(model.serwerAddress) == false)
+            pipeKey = Model.interruptPipeSource.Register(selector,Operations.Read);
+            if (socket.Connect(Model.serwerAddress) == false)
             {
                 selector.Select();
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
@@ -221,17 +309,17 @@ namespace TINClient
             int sent = 0;
             while(sent<message.Length)
             {
-                if(message.Length-sent>model.FrameSize)
+                if(message.Length-sent>Model.FrameSize)
                 {
-                    SendFrame(message, ByteBuffer.Wrap(message,sent,model.FrameSize), 0);
-                    sent += model.FrameSize;
+                    SendFrame(message, ByteBuffer.Wrap(message,sent,Model.FrameSize), 0);
+                    sent += Model.FrameSize;
                 }
                 else
                 {
                     SendFrame(message, ByteBuffer.Wrap(message, sent, message.Length - sent), 1);
                     sent = message.Length;
                 }
-                model.mainActivity.Output("sent " + sent + " bytes");
+                Model.mainActivity.Output("sent " + sent + " bytes");
                 System.Threading.Thread.Sleep(1000);
             }
         }
@@ -241,7 +329,7 @@ namespace TINClient
             SelectionKey pipeKey;
             Selector selector = Selector.Open();
             SelectionKey socketKey = socket.Register(selector, Operations.Write);
-            pipeKey = model.interruptPipe.Source().Register(selector, Operations.Read);
+            pipeKey = Model.interruptPipe.Source().Register(selector, Operations.Read);
             messageBuffer.Mark();
             ByteBuffer header = ByteBuffer.Allocate(24);
             header.Order(ByteOrder.BigEndian);
@@ -294,7 +382,7 @@ namespace TINClient
         KeyValuePair<int,byte[]> ReciveFrame()
         {
             Selector selector = Selector.Open();
-            SelectionKey pipeKey = model.interruptPipeSource.Register(selector, Operations.Read); ;
+            SelectionKey pipeKey = Model.interruptPipeSource.Register(selector, Operations.Read); ;
             SelectionKey socketKey = socket.Register(selector, Operations.Read);
 
             ByteBuffer header = ByteBuffer.Allocate(24);

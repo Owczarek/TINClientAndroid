@@ -47,39 +47,40 @@ namespace TINClient
              portText = FindViewById<EditText>(Resource.Id.Port);
              outputText = FindViewById<TextView>(Resource.Id.Output);
 
-            //button.Click += delegate { button.Text = string.Format("{0} clicks!", count++); };
+            
 
-            Model model=new Model();
-            model.mainActivity = this;
+            Model Model;
+          //  Model.mainActivity = this; later
+
+            this.StartService(new Intent(this, typeof(ConnectionService)));
+
+            ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection(null);
+
+            // bind to service
+            Intent locationServiceIntent =
+                new Intent(Android.App.Application.Context, typeof(ConnectionService));
+            bool a=Android.App.Application.Context.BindService(
+                locationServiceIntent, serviceConnection, Bind.AutoCreate);
+
+
+            
+
 
 
             connectButton.Click += delegate
             {
-                if (model.logicLayer == null)
+                if (Model.logicLayer == null)
                 {
 
-                    model.interruptPipe = Pipe.Open();
-                    model.communicationPipe = Pipe.Open();
-                    model.communicationPipeSink = model.communicationPipe.Sink();
-                    model.interruptPipeSink = model.interruptPipe.Sink();
-                    model.communicationPipeSource = model.communicationPipe.Source();
-                    model.interruptPipeSource = model.interruptPipe.Source();
-                    model.interruptPipeSource.ConfigureBlocking(false);
-                    model.communicationPipeSource.ConfigureBlocking(false);
+
+                    Model.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
+
+                    Byte[] signal = new byte[1];
+                    signal[0] = (byte)Signal.Connect;
+                    ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
+                    int sent = Model.communicationPipeSink.Write(sigBuf);
 
 
-
-
-                    model.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
-
-
-
-                    model.logicLayer = new LogicLayer(model);
-
-
-                    model.connectionThread = new Thread(model.logicLayer.Run);
-
-                    model.connectionThread.Start();
                 }
 
                 // connectionThread.Join();
@@ -87,11 +88,11 @@ namespace TINClient
 
             disconnectButton.Click += delegate
             {
-                if (model.logicLayer != null)
+                if (Model.logicLayer != null)
                 {
                     Byte[] signal = new byte[1];
                     signal[0] = 0;
-                    int sent=model.interruptPipe.Sink().Write(ByteBuffer.Wrap(signal));
+                    int sent=Model.interruptPipe.Sink().Write(ByteBuffer.Wrap(signal));
 
                     
                 }
@@ -100,25 +101,25 @@ namespace TINClient
 
             sendButton.Click += delegate
             {
-                if (model.logicLayer != null)
+                if (Model.logicLayer != null)
                 {
                     Byte[] signal = new byte[1];
                     signal[0] = (byte)Signal.Send;
                     ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
-                    int sent=model.communicationPipeSink.Write(sigBuf);
-                 //   int sent=model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
+                    int sent=Model.communicationPipeSink.Write(sigBuf);
+                 //   int sent=Model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
                 }
 
             };
             reciveButton.Click += delegate
             {
-                if (model.logicLayer != null)
+                if (Model.logicLayer != null)
                 {
                     Byte[] signal = new byte[1];
                     signal[0] = (byte)Signal.Recive;
                     ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
-                    int sent = model.communicationPipeSink.Write(sigBuf);
-                    //   int sent=model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
+                    int sent = Model.communicationPipeSink.Write(sigBuf);
+                    //   int sent=Model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
                 }
 
             };

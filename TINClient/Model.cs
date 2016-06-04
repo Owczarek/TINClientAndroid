@@ -12,43 +12,46 @@ using Android.Widget;
 using Java.Nio.Channels;
 using Java.Net;
 using System.Threading;
+
 namespace TINClient
 {
-    class Model
+    public class Model
     {
-        public Pipe interruptPipe;
-        public Pipe communicationPipe;
-        public Pipe.SinkChannel communicationPipeSink;
-        public Pipe.SinkChannel interruptPipeSink;
-        public Pipe.SourceChannel interruptPipeSource;
-        public Pipe.SourceChannel communicationPipeSource;
-        public InetSocketAddress serwerAddress;
-        public LogicLayer logicLayer;
-        public Thread connectionThread;
-        public int FrameSize=5;
-        public MainActivity mainActivity;
+        static public Pipe interruptPipe;
+        static public Pipe communicationPipe;
+        static public Pipe.SinkChannel communicationPipeSink;
+        static public Pipe.SinkChannel interruptPipeSink;
+        static public Pipe.SourceChannel interruptPipeSource;
+        static public Pipe.SourceChannel communicationPipeSource;
+        static public InetSocketAddress serwerAddress;
+        static public LogicLayer logicLayer;
+        static public Thread connectionThread;
+        static public int FrameSize=5;
+        static public MainActivity mainActivity;
+
+        static public byte[] username;
+        static public byte[] password;
 
 
-
-
-        public void DestroyConnection()
+        static public void DestroyConnection()
         {
             logicLayer = null;
             communicationPipe.Dispose();
             communicationPipe = null;
             interruptPipe.Dispose();
             interruptPipe = null;
-            mainActivity.RunOnUiThread(() => { connectionThread.Join(); connectionThread = null; });
-            mainActivity.Output("disconnected");
+          //  mainActivity.RunOnUiThread(() => { connectionThread.Join(); connectionThread = null; });
+          //  mainActivity.Output("disconnected");
         }
     }
 
-    
+
 
     public enum Signal : byte
     {
         Send = 0,
-        Recive =1
+        Recive =1,
+        Connect=2
     }
 
 }
