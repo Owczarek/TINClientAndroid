@@ -7,7 +7,7 @@ using Android.Widget;
 using Android.App;
 using Android.Appwidget;
 using System.Linq;
-using Java.Math;
+using System.Numerics;
 namespace TINClient
 {
 
@@ -63,8 +63,10 @@ namespace TINClient
 
 
 
-                        securityLayer = new SecurityLayer(Model);
-                Model.mainActivity.Output("connected?");
+                securityLayer = new SecurityLayer();
+                if(Model.mainActivity!=null)
+                  Model.mainActivity.Output("connected?");
+                /*
                 while (true)
                 {
                     
@@ -72,7 +74,7 @@ namespace TINClient
 
 
                     selector.Select();
-                   /* ICollection<SelectionKey>*/ selectedKeys = selector.SelectedKeys();
+                    selectedKeys = selector.SelectedKeys();
                     foreach (SelectionKey key in selectedKeys)
                     {
                        if (key == intPipeKey)
@@ -103,7 +105,8 @@ namespace TINClient
                         }
                     }
                     
-                }
+                }*/
+                SignIn();
             }
             catch (System.Exception e)
             {
@@ -131,22 +134,27 @@ namespace TINClient
             SendFrame(0, Model.username);//or + \0
             byte[] message;
             if(ReciveFrame(out message) !=1)
-                throw (new System.Exception("wrong message"));
-            ByteBuffer buf = ByteBuffer.Wrap(message);
-           
+                throw (new System.Exception("wrong message type"));
 
 
+            byte[] responseValue = new byte[Model.password.Length + message.Length];
+            Model.password.CopyTo(responseValue, 0);
+            message.CopyTo(responseValue, Model.password.Length);
+
+            MD5 md5 = MD5.Create();
+            byte[] response = md5.ComputeHash(responseValue);
+
+            SendFrame(2, response);
+
+            if (ReciveFrame(out message) != 3)
+                throw (new System.Exception("unable to login"));
         }
 
         void SendFrame(byte messageType,byte[] message)///should really be optimized  not to copy frame over again
         {
-            byte[] frame = new byte[5 + message.Length];
+            byte[] frame = new byte[1 + message.Length];
             frame[0] = messageType;
-            frame[4] = (byte)message.Length;//i'm bad person
-            frame[3] = (byte)(message.Length>>1);//i'm bad person
-            frame[2] = (byte)(message.Length >> 2);//i'm bad person
-            frame[1] = (byte)(message.Length >> 3);//i'm bad person
-            message.CopyTo(frame, 5);
+            message.CopyTo(frame, 1);
             securityLayer.Send(frame);
         }
 
@@ -157,42 +165,26 @@ namespace TINClient
             int messageType = frame[0];
             frame.RemoveAt(0);
 
-            int length=0;
-            length |= ((int)frame[0])<<3;//i'm bad person
-            length |= ((int)frame[1])<<2;//i'm bad person
-            length |= ((int)frame[2])<<1;//i'm bad person
-            length |= ((int)frame[3]);//i'm bad person
-
-            frame.RemoveAt(3);
-            frame.RemoveAt(2);
-            frame.RemoveAt(1);
-            frame.RemoveAt(0);
-
-            while (length < frame.Count)
-                frame.RemoveAt(frame.Count - 1);
 
             message = frame.ToArray();
             return messageType;
 
         }
 
-        Model Model;
         SecurityLayer securityLayer;
     }
 
 
     internal class SecurityLayer
     {
-        Model Model;
         TCPLayer tcpLayer;
        // byte[] serverRSA;
         ICryptoTransform symmetricEncryptor;
         ICryptoTransform symmetricDecryptor;
-
-        public SecurityLayer(Model m)
+        Aes sessionCypher;
+        public SecurityLayer()
         {
-            Model = m;
-            tcpLayer = new TCPLayer(Model);
+            tcpLayer = new TCPLayer();
 
             tcpLayer.Send(new byte[1] {0});
 
@@ -220,7 +212,8 @@ namespace TINClient
 
             rsaCypher.ImportParameters(rsaKey);
 
-            Aes sessionCypher = AesCryptoServiceProvider.Create();
+            sessionCypher=AesCryptoServiceProvider.Create();
+            sessionCypher.Padding = PaddingMode.PKCS7;
             sessionCypher.Mode = CipherMode.ECB;
             sessionCypher.GenerateKey();
             symmetricEncryptor = sessionCypher.CreateEncryptor();
@@ -244,7 +237,7 @@ namespace TINClient
              encryptedMessage[0] = 3;
              symmetricEncryptor.TransformFinalBlock(message, 0, message.Length).CopyTo(encryptedMessage, 1);
              tcpLayer.Send(encryptedMessage);
-        }
+         }
 
         public List<byte> Recive()
         {
@@ -252,7 +245,8 @@ namespace TINClient
             if (message[0] != 3)
                 throw (new System.Exception("security"));
             message.RemoveAt(0);
-            byte[] decryptedMessage=symmetricDecryptor.TransformFinalBlock(message.ToArray(), 0, message.Count);
+            byte[] array = message.ToArray();
+            byte[] decryptedMessage=symmetricDecryptor.TransformFinalBlock(array, 0, message.Count);
             List<byte> returned = new List<byte>();
             returned.AddRange(decryptedMessage);
             return returned;
@@ -269,14 +263,12 @@ namespace TINClient
         //       public int lenght;
         //      public byte[16] checksum;
         //  }
-        Model Model;
         SocketChannel socket;
         //   Selector selector;
         //   SelectionKey socketKey;
         
-        public TCPLayer(Model m)
+        public TCPLayer()
         {
-            Model = m;
             SelectionKey pipeKey;
             Selector selector=Selector.Open();
             SelectionKey socketKey;
@@ -319,7 +311,8 @@ namespace TINClient
                     SendFrame(message, ByteBuffer.Wrap(message, sent, message.Length - sent), 1);
                     sent = message.Length;
                 }
-                Model.mainActivity.Output("sent " + sent + " bytes");
+                if (Model.mainActivity != null)
+                    Model.mainActivity.Output("sent " + sent + " bytes");
                 System.Threading.Thread.Sleep(1000);
             }
         }

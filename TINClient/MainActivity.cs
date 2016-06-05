@@ -12,6 +12,8 @@ using Java.Nio.Channels;
 using System.Threading;
 using Java.Net;
 using Java.Nio;
+using System.Security.Cryptography;
+
 namespace TINClient
 {
     [Activity(Label = "TINClient", MainLauncher = true, Icon = "@drawable/icon")]
@@ -30,7 +32,6 @@ namespace TINClient
         {
             base.OnCreate(bundle);
 
-
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().PermitAll().Build();
             StrictMode.SetThreadPolicy(policy);
 
@@ -48,9 +49,7 @@ namespace TINClient
              outputText = FindViewById<TextView>(Resource.Id.Output);
 
             
-
-            Model Model;
-          //  Model.mainActivity = this; later
+            Model.mainActivity = this;//should be nulled later
 
             this.StartService(new Intent(this, typeof(ConnectionService)));
 
@@ -69,7 +68,7 @@ namespace TINClient
 
             connectButton.Click += delegate
             {
-                if (Model.logicLayer == null)
+                if (Model.logicLayer != null)
                 {
 
 

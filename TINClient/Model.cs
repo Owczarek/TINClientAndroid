@@ -26,14 +26,14 @@ namespace TINClient
         static public InetSocketAddress serwerAddress;
         static public LogicLayer logicLayer;
         static public Thread connectionThread;
-        static public int FrameSize=5;
+        static public int FrameSize=30;
         static public MainActivity mainActivity;
 
-        static public byte[] username;
-        static public byte[] password;
+        static public byte[] username= {(byte)'a',(byte)'b' };//should be initialized from conf file
+        static public byte[] password= {(byte)'a',(byte)'b', (byte)'c' };
 
 
-        static public void DestroyConnection()
+    static public void DestroyConnection()
         {
             logicLayer = null;
             communicationPipe.Dispose();
