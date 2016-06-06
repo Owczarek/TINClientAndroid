@@ -8,6 +8,9 @@ using Android.App;
 using Android.Appwidget;
 using System.Linq;
 using System.Numerics;
+using System.IO;
+using System.Text;
+
 namespace TINClient
 {
 
@@ -107,6 +110,10 @@ namespace TINClient
                     
                 }*/
                 SignIn();
+                foreach(string path in Model.files)
+                {
+                    SendFile(path);
+                }
             }
             catch (System.Exception e)
             {
@@ -149,6 +156,59 @@ namespace TINClient
             if (ReciveFrame(out message) != 3)
                 throw (new System.Exception("unable to login"));
         }
+
+        void SendFile(string patch)
+        {
+            int timestamp=(int)File.GetLastWriteTimeUtc(patch).Subtract(new System.DateTime(1970, 1, 1)).TotalSeconds;
+            int length =(int) new FileInfo(patch).Length;
+
+            byte[] message = new byte[Model.username.Length + Model.password.Length + 4 + 4 + 2];
+
+            Encoding.ASCII.GetBytes(patch).CopyTo(message, 0);
+            Model.machinename.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length+1);
+
+
+
+            byte[] intBytes = System.BitConverter.GetBytes(length);
+            if (System.BitConverter.IsLittleEndian)
+                System.Array.Reverse(intBytes);
+            intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 2 + Model.machinename.Length);
+
+            intBytes = System.BitConverter.GetBytes(timestamp);
+            if (System.BitConverter.IsLittleEndian)
+                System.Array.Reverse(intBytes);
+            intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 6 + Model.machinename.Length);
+
+            SendFrame(6, message);
+            
+            int responseType = ReciveFrame(out message);
+            if (responseType == 8)
+                return;
+            if (responseType != 7)
+                throw (new System.Exception("wrong message type"));
+
+            int position=0;
+
+            ByteBuffer bb = ByteBuffer.Wrap(message);
+            position = bb.Int;
+
+            while (true)
+            {
+                using (BinaryReader br = new BinaryReader(new FileStream(patch, FileMode.Open)))
+                {
+
+                    position+=br.Read(message, position, Model.LogicFrameSize);
+                    SendFrame(9, message);
+                    responseType = ReciveFrame(out message);
+                    if(responseType!= 10)
+                        throw (new System.Exception("wrong message type"));
+                    if (position == length)
+                        break;
+                }
+            }
+            
+        }
+
 
         void SendFrame(byte messageType,byte[] message)///should really be optimized  not to copy frame over again
         {

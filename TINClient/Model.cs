@@ -27,13 +27,17 @@ namespace TINClient
         static public LogicLayer logicLayer;
         static public Thread connectionThread;
         static public int FrameSize=30;
+        static public int LogicFrameSize = 300;
         static public MainActivity mainActivity;
 
         static public byte[] username= {(byte)'a',(byte)'b' };//should be initialized from conf file
-        static public byte[] password= {(byte)'a',(byte)'b', (byte)'c' };
+        static public byte[] password= {(byte)'a',(byte)'b', (byte)'c' };//without /0
+        static public string[] files= {"/sdcard/test/abc.txt" };
+        static public byte[]  machinename = { (byte)'x', (byte)'y', (byte)'z' };//without /0
 
 
-    static public void DestroyConnection()
+
+        static public void DestroyConnection()
         {
             logicLayer = null;
             communicationPipe.Dispose();
