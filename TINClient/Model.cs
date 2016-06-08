@@ -15,7 +15,7 @@ using System.Threading;
 
 namespace TINClient
 {
-    public class Model
+    static public class Model
     {
         static public Pipe interruptPipe;
         static public Pipe communicationPipe;
@@ -32,24 +32,41 @@ namespace TINClient
 
         static public byte[] username= {(byte)'a',(byte)'b' };//should be initialized from conf file
         static public byte[] password= {(byte)'a',(byte)'b', (byte)'c' };//without /0
-        static public string[] files= {"/sdcard/test/abc.txt" };
+        static public List<string> files;
         static public byte[]  machinename = { (byte)'x', (byte)'y', (byte)'z' };//without /0
+        static public DateTime timeLastSynchronized = DateTime.Now.AddHours(-1);
+        static public bool autoconnect=true;
+
+        static public State connectionState= State.Disconnected;
+
+
+        static Model()
+        {
+            files = new List<string>();
+            files.Add("/sdcard/test/abc.txt");
+        }
 
 
 
         static public void DestroyConnection()
         {
-            logicLayer = null;
-            communicationPipe.Dispose();
-            communicationPipe = null;
-            interruptPipe.Dispose();
-            interruptPipe = null;
-          //  mainActivity.RunOnUiThread(() => { connectionThread.Join(); connectionThread = null; });
+           // logicLayer = null;
+          //  communicationPipe.Dispose();
+         //   communicationPipe = null;
+         //   interruptPipe.Dispose();
+           // interruptPipe = null;
+         //  if(mainActivity!=null)
+        //    mainActivity.RunOnUiThread(() => { connectionThread.Join(); connectionThread = null; });
           //  mainActivity.Output("disconnected");
         }
     }
 
-
+    public enum State : byte
+    {
+        Disconnected,
+        Logged,
+        Sending
+    }
 
     public enum Signal : byte
     {

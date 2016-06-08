@@ -23,7 +23,8 @@ namespace TINClient
         {
             base.OnCreate();
 
-
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().PermitAll().Build();
+            StrictMode.SetThreadPolicy(policy);
 
             Model.interruptPipe = Pipe.Open();
             Model.communicationPipe = Pipe.Open();
@@ -44,19 +45,26 @@ namespace TINClient
             Model.logicLayer = new LogicLayer();
 
 
-            Model.connectionThread = new Thread(Model.logicLayer.Run);
-
-            Model.connectionThread.Start();
+            if(Model.autoconnect)
+            {
+                
+            }
+            
 
 
         }
         public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
         {
-          /*  // start a task here
-            new Task(() => {
-                // long running code
-                DoWork();
-            }).Start();*/
+            /*  // start a task here
+              new Task(() => {
+                  // long running code
+                  DoWork();
+              }).Start();*/
+            if (Model.connectionThread == null)
+            { 
+                Model.connectionThread = new Thread(Model.logicLayer.Run);
+                Model.connectionThread.Start();
+            }
             return StartCommandResult.Sticky;
         }
 
@@ -66,7 +74,6 @@ namespace TINClient
             return new ConnectionServiceBinder(this);
         }
     }
-
 
     public class ConnectionServiceBinder : Binder
     {
@@ -117,6 +124,24 @@ namespace TINClient
         }
 
         public void OnServiceDisconnected(ComponentName name) { /*this.binder.IsBound = false;*/ }
+    }
+
+
+
+
+
+
+    [BroadcastReceiver]
+    [IntentFilter(new[] { Intent.ActionBootCompleted })]
+    class BootCompletedBroadcastMessageReceiver : BroadcastReceiver
+    {
+        public override void OnReceive(Context context, Intent intent)
+        {
+            if (intent.Action == Intent.ActionBootCompleted)
+            {
+                Application.Context.StartService(new Intent(Application.Context, typeof(ConnectionService)));
+            }
+        }
     }
 
 

@@ -21,19 +21,15 @@ namespace TINClient
     {
 
         Button connectButton;
-        Button sendButton;
-        Button reciveButton;
         Button disconnectButton;
-        EditText addressText;
-        EditText portText;
+        Button settingsButton;
         TextView outputText;
 
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
 
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().PermitAll().Build();
-            StrictMode.SetThreadPolicy(policy);
+            
 
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
@@ -41,25 +37,24 @@ namespace TINClient
             // Get our button from the layout resource,
             // and attach an event to it
              connectButton = FindViewById<Button>(Resource.Id.Connect);
-             sendButton = FindViewById<Button>(Resource.Id.Send);
-             reciveButton = FindViewById<Button>(Resource.Id.Recive);
+             
              disconnectButton = FindViewById<Button>(Resource.Id.Disconnect);
-             addressText = FindViewById<EditText>(Resource.Id.Address);
-             portText = FindViewById<EditText>(Resource.Id.Port);
-             outputText = FindViewById<TextView>(Resource.Id.Output);
+
+            settingsButton = FindViewById<Button>(Resource.Id.Settings);
+
+            outputText = FindViewById<TextView>(Resource.Id.Output);
 
             
-            Model.mainActivity = this;//should be nulled later
 
             this.StartService(new Intent(this, typeof(ConnectionService)));
 
             ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection(null);
 
             // bind to service
-            Intent locationServiceIntent =
+            Intent connectionServiceIntent =
                 new Intent(Android.App.Application.Context, typeof(ConnectionService));
             bool a=Android.App.Application.Context.BindService(
-                locationServiceIntent, serviceConnection, Bind.AutoCreate);
+                connectionServiceIntent, serviceConnection, Bind.AutoCreate);
 
 
             
@@ -72,14 +67,16 @@ namespace TINClient
                 {
 
 
-                    Model.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
-
+                    //  Model.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
+                    /*
                     Byte[] signal = new byte[1];
                     signal[0] = (byte)Signal.Connect;
                     ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
-                    int sent = Model.communicationPipeSink.Write(sigBuf);
+                    int sent = Model.communicationPipeSink.Write(sigBuf);*/
+                    //   Model.connectionThread = new Thread(Model.logicLayer.Run);
+                    //   Model.connectionThread.Start();
 
-
+                    this.StartService(new Intent(this, typeof(ConnectionService)));
                 }
 
                 // connectionThread.Join();
@@ -98,38 +95,30 @@ namespace TINClient
 
             };
 
-            sendButton.Click += delegate
-            {
-                if (Model.logicLayer != null)
-                {
-                    Byte[] signal = new byte[1];
-                    signal[0] = (byte)Signal.Send;
-                    ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
-                    int sent=Model.communicationPipeSink.Write(sigBuf);
-                 //   int sent=Model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
-                }
 
-            };
-            reciveButton.Click += delegate
+            settingsButton.Click += delegate
             {
-                if (Model.logicLayer != null)
-                {
-                    Byte[] signal = new byte[1];
-                    signal[0] = (byte)Signal.Recive;
-                    ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
-                    int sent = Model.communicationPipeSink.Write(sigBuf);
-                    //   int sent=Model.communicationPipe.Sink().Write(ByteBuffer.Wrap(signal));
-                }
-
+                var intent = new Intent(this, typeof(Settings));
+                StartActivity(intent);
             };
 
 
-            
 
         }
         public void Output(string a)
         {
             RunOnUiThread(() => outputText.Text = a);
+        }
+
+        protected override void OnPause()
+        {
+            Model.mainActivity = null;
+            base.OnPause();
+        }
+        protected override void OnResume()
+        {
+            Model.mainActivity = this;
+            base.OnResume();
         }
     }
 }

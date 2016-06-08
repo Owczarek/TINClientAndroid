@@ -39,7 +39,7 @@ namespace TINClient
                 comPipeKey = comPipeSource.Register(selector, Operations.Read);
 
 
-
+                /*
                 // shouldent really be here - it's same as lower
                 selector.Select();
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
@@ -68,7 +68,7 @@ namespace TINClient
 
                 securityLayer = new SecurityLayer();
                 if(Model.mainActivity!=null)
-                  Model.mainActivity.Output("connected?");
+                  Model.mainActivity.Output("connected?");*/
                 /*
                 while (true)
                 {
@@ -109,11 +109,23 @@ namespace TINClient
                     }
                     
                 }*/
-                SignIn();
-                foreach(string path in Model.files)
-                {
-                    SendFile(path);
-                }
+                
+                    if (Model.connectionState == State.Disconnected)
+                    {
+                        securityLayer = new SecurityLayer();
+                        if (Model.mainActivity != null)
+                            Model.mainActivity.Output("connected?");
+                        SignIn();
+                    }
+                    Model.connectionState = State.Logged;
+                
+                    foreach(string path in Model.files)
+                    {
+                        Model.connectionState = State.Sending;
+                        SendFile(path);
+                    }
+                    Model.connectionState = State.Logged;
+                
             }
             catch (System.Exception e)
             {
@@ -131,8 +143,10 @@ namespace TINClient
 
         void Disconnect()
         {
+            Model.connectionState = State.Disconnected;
             securityLayer = null;
             Model.DestroyConnection();
+            Model.connectionThread = null;
             
         }
 
