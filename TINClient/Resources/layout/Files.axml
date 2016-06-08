@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:minWidth="25px"
+    android:minHeight="25px">
+    <EditText
+        android:inputType="text"
+        android:id="@+id/Path"
+        android:text="/sdcard/TIN/"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/Add"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Add" />
+    <Button
+        android:id="@+id/Remove"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Remove" />
+    <ListView
+        android:minWidth="25px"
+        android:minHeight="25px"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/listView" />
+</LinearLayout>

@@ -23,6 +23,7 @@ namespace TINClient
         Button connectButton;
         Button disconnectButton;
         Button settingsButton;
+        Button filesButton;
         TextView outputText;
 
         protected override void OnCreate(Bundle bundle)
@@ -41,6 +42,8 @@ namespace TINClient
              disconnectButton = FindViewById<Button>(Resource.Id.Disconnect);
 
             settingsButton = FindViewById<Button>(Resource.Id.Settings);
+
+            filesButton = FindViewById<Button>(Resource.Id.Files);
 
             outputText = FindViewById<TextView>(Resource.Id.Output);
 
@@ -63,18 +66,18 @@ namespace TINClient
 
             connectButton.Click += delegate
             {
-                if (Model.logicLayer != null)
+                if (Model.instance.logicLayer != null)
                 {
 
 
-                    //  Model.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
+                    //  Model.instance.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
                     /*
                     Byte[] signal = new byte[1];
                     signal[0] = (byte)Signal.Connect;
                     ByteBuffer sigBuf = ByteBuffer.Wrap(signal);
-                    int sent = Model.communicationPipeSink.Write(sigBuf);*/
-                    //   Model.connectionThread = new Thread(Model.logicLayer.Run);
-                    //   Model.connectionThread.Start();
+                    int sent = Model.instance.communicationPipeSink.Write(sigBuf);*/
+                    //   Model.instance.connectionThread = new Thread(Model.instance.logicLayer.Run);
+                    //   Model.instance.connectionThread.Start();
 
                     this.StartService(new Intent(this, typeof(ConnectionService)));
                 }
@@ -84,11 +87,11 @@ namespace TINClient
 
             disconnectButton.Click += delegate
             {
-                if (Model.logicLayer != null)
+                if (Model.instance.logicLayer != null)
                 {
                     Byte[] signal = new byte[1];
                     signal[0] = 0;
-                    int sent=Model.interruptPipe.Sink().Write(ByteBuffer.Wrap(signal));
+                    int sent=Model.instance.interruptPipe.Sink().Write(ByteBuffer.Wrap(signal));
 
                     
                 }
@@ -102,6 +105,12 @@ namespace TINClient
                 StartActivity(intent);
             };
 
+            filesButton.Click += delegate
+            {
+                var intent = new Intent(this, typeof(Files));
+                StartActivity(intent);
+            };
+
 
 
         }
@@ -112,13 +121,19 @@ namespace TINClient
 
         protected override void OnPause()
         {
-            Model.mainActivity = null;
+            Model.instance.mainActivity = null;
             base.OnPause();
         }
         protected override void OnResume()
         {
-            Model.mainActivity = this;
+            Model.instance.mainActivity = this;
             base.OnResume();
+        }
+
+        protected override void OnDestroy()
+        {
+            Model.Serialize(Model.savePath);
+            base.OnDestroy();
         }
     }
 }

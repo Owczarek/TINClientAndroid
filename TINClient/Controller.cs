@@ -29,12 +29,12 @@ namespace TINClient
             {
                 Selector selector = Selector.Open();
 
-                Pipe.SourceChannel intPipeSource = Model.interruptPipe.Source();
+                Pipe.SourceChannel intPipeSource = Model.instance.interruptPipe.Source();
                 intPipeSource.ConfigureBlocking(false);
                 intPipeKey = intPipeSource.Register(selector, Operations.Read);
 
 
-                Pipe.SourceChannel comPipeSource = Model.communicationPipe.Source();
+                Pipe.SourceChannel comPipeSource = Model.instance.communicationPipe.Source();
                 comPipeSource.ConfigureBlocking(false);
                 comPipeKey = comPipeSource.Register(selector, Operations.Read);
 
@@ -67,8 +67,8 @@ namespace TINClient
 
 
                 securityLayer = new SecurityLayer();
-                if(Model.mainActivity!=null)
-                  Model.mainActivity.Output("connected?");*/
+                if(Model.instance.mainActivity!=null)
+                  Model.instance.mainActivity.Output("connected?");*/
                 /*
                 while (true)
                 {
@@ -103,28 +103,35 @@ namespace TINClient
                             if (signalByte == (byte)Signal.Recive)
                             {
                                 List<byte> output = securityLayer.Recive();
-                                Model.mainActivity.Output(System.Text.Encoding.ASCII.GetString(output.ToArray()));
+                                Model.instance.mainActivity.Output(System.Text.Encoding.ASCII.GetString(output.ToArray()));
                             }
                         }
                     }
                     
                 }*/
                 
-                    if (Model.connectionState == State.Disconnected)
+                    if (Model.instance.connectionState == State.Disconnected)
                     {
                         securityLayer = new SecurityLayer();
-                        if (Model.mainActivity != null)
-                            Model.mainActivity.Output("connected?");
+                        if (Model.instance.mainActivity != null)
+                            Model.instance.mainActivity.Output("connected?");
                         SignIn();
                     }
-                    Model.connectionState = State.Logged;
-                
-                    foreach(string path in Model.files)
+                    Model.instance.connectionState = State.Logged;
+
+                    List<string> files = new List<string>();
+
+                    foreach (string path in Model.instance.files)
                     {
-                        Model.connectionState = State.Sending;
+                        files.Add(path);
+                    }
+
+                    foreach (string path in files)
+                    {
+                        Model.instance.connectionState = State.Sending;
                         SendFile(path);
                     }
-                    Model.connectionState = State.Logged;
+                    Model.instance.connectionState = State.Logged;
                 
             }
             catch (System.Exception e)
@@ -143,24 +150,24 @@ namespace TINClient
 
         void Disconnect()
         {
-            Model.connectionState = State.Disconnected;
+            Model.instance.connectionState = State.Disconnected;
             securityLayer = null;
-            Model.DestroyConnection();
-            Model.connectionThread = null;
+            Model.instance.DestroyConnection();
+            Model.instance.connectionThread = null;
             
         }
 
         void SignIn()
         {
-            SendFrame(0, Model.username);//or + \0
+            SendFrame(0, Model.instance.username);//or + \0
             byte[] message;
             if(ReciveFrame(out message) !=1)
                 throw (new System.Exception("wrong message type"));
 
 
-            byte[] responseValue = new byte[Model.password.Length + message.Length];
-            Model.password.CopyTo(responseValue, 0);
-            message.CopyTo(responseValue, Model.password.Length);
+            byte[] responseValue = new byte[Model.instance.password.Length + message.Length];
+            Model.instance.password.CopyTo(responseValue, 0);
+            message.CopyTo(responseValue, Model.instance.password.Length);
 
             MD5 md5 = MD5.Create();
             byte[] response = md5.ComputeHash(responseValue);
@@ -176,22 +183,22 @@ namespace TINClient
             int timestamp=(int)File.GetLastWriteTimeUtc(patch).Subtract(new System.DateTime(1970, 1, 1)).TotalSeconds;
             int length =(int) new FileInfo(patch).Length;
 
-            byte[] message = new byte[Model.username.Length + Model.password.Length + 4 + 4 + 2];
+            byte[] message = new byte[Model.instance.username.Length + Model.instance.password.Length + 4 + 4 + 2];
 
             Encoding.ASCII.GetBytes(patch).CopyTo(message, 0);
-            Model.machinename.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length+1);
+            Model.instance.machinename.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length+1);
 
 
 
             byte[] intBytes = System.BitConverter.GetBytes(length);
             if (System.BitConverter.IsLittleEndian)
                 System.Array.Reverse(intBytes);
-            intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 2 + Model.machinename.Length);
+            intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 2 + Model.instance.machinename.Length);
 
             intBytes = System.BitConverter.GetBytes(timestamp);
             if (System.BitConverter.IsLittleEndian)
                 System.Array.Reverse(intBytes);
-            intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 6 + Model.machinename.Length);
+            intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 6 + Model.instance.machinename.Length);
 
             SendFrame(6, message);
             
@@ -211,7 +218,7 @@ namespace TINClient
                 using (BinaryReader br = new BinaryReader(new FileStream(patch, FileMode.Open)))
                 {
 
-                    position+=br.Read(message, position, Model.LogicFrameSize);
+                    position+=br.Read(message, position, Model.instance.LogicFrameSize);
                     SendFrame(9, message);
                     responseType = ReciveFrame(out message);
                     if(responseType!= 10)
@@ -350,8 +357,8 @@ namespace TINClient
             socket.ConfigureBlocking(false);
             socketKey = socket.Register(selector, Operations.Connect);
 
-            pipeKey = Model.interruptPipeSource.Register(selector,Operations.Read);
-            if (socket.Connect(Model.serwerAddress) == false)
+            pipeKey = Model.instance.interruptPipeSource.Register(selector,Operations.Read);
+            if (socket.Connect(Model.instance.serwerAddress) == false)
             {
                 selector.Select();
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
@@ -375,18 +382,18 @@ namespace TINClient
             int sent = 0;
             while(sent<message.Length)
             {
-                if(message.Length-sent>Model.FrameSize)
+                if(message.Length-sent>Model.instance.FrameSize)
                 {
-                    SendFrame(message, ByteBuffer.Wrap(message,sent,Model.FrameSize), 0);
-                    sent += Model.FrameSize;
+                    SendFrame(message, ByteBuffer.Wrap(message,sent,Model.instance.FrameSize), 0);
+                    sent += Model.instance.FrameSize;
                 }
                 else
                 {
                     SendFrame(message, ByteBuffer.Wrap(message, sent, message.Length - sent), 1);
                     sent = message.Length;
                 }
-                if (Model.mainActivity != null)
-                    Model.mainActivity.Output("sent " + sent + " bytes");
+                if (Model.instance.mainActivity != null)
+                    Model.instance.mainActivity.Output("sent " + sent + " bytes");
                 System.Threading.Thread.Sleep(1000);
             }
         }
@@ -396,7 +403,7 @@ namespace TINClient
             SelectionKey pipeKey;
             Selector selector = Selector.Open();
             SelectionKey socketKey = socket.Register(selector, Operations.Write);
-            pipeKey = Model.interruptPipe.Source().Register(selector, Operations.Read);
+            pipeKey = Model.instance.interruptPipe.Source().Register(selector, Operations.Read);
             messageBuffer.Mark();
             ByteBuffer header = ByteBuffer.Allocate(24);
             header.Order(ByteOrder.BigEndian);
@@ -449,7 +456,7 @@ namespace TINClient
         KeyValuePair<int,byte[]> ReciveFrame()
         {
             Selector selector = Selector.Open();
-            SelectionKey pipeKey = Model.interruptPipeSource.Register(selector, Operations.Read); ;
+            SelectionKey pipeKey = Model.instance.interruptPipeSource.Register(selector, Operations.Read); ;
             SelectionKey socketKey = socket.Register(selector, Operations.Read);
 
             ByteBuffer header = ByteBuffer.Allocate(24);

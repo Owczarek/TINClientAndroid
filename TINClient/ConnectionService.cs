@@ -26,26 +26,26 @@ namespace TINClient
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().PermitAll().Build();
             StrictMode.SetThreadPolicy(policy);
 
-            Model.interruptPipe = Pipe.Open();
-            Model.communicationPipe = Pipe.Open();
-            Model.communicationPipeSink = Model.communicationPipe.Sink();
-            Model.interruptPipeSink = Model.interruptPipe.Sink();
-            Model.communicationPipeSource = Model.communicationPipe.Source();
-            Model.interruptPipeSource = Model.interruptPipe.Source();
-            Model.interruptPipeSource.ConfigureBlocking(false);
-            Model.communicationPipeSource.ConfigureBlocking(false);
+            Model.instance.interruptPipe = Pipe.Open();
+            Model.instance.communicationPipe = Pipe.Open();
+            Model.instance.communicationPipeSink = Model.instance.communicationPipe.Sink();
+            Model.instance.interruptPipeSink = Model.instance.interruptPipe.Sink();
+            Model.instance.communicationPipeSource = Model.instance.communicationPipe.Source();
+            Model.instance.interruptPipeSource = Model.instance.interruptPipe.Source();
+            Model.instance.interruptPipeSource.ConfigureBlocking(false);
+            Model.instance.communicationPipeSource.ConfigureBlocking(false);
 
 
 
 
-      //      Model.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
+      //      Model.instance.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
 
 
 
-            Model.logicLayer = new LogicLayer();
+            Model.instance.logicLayer = new LogicLayer();
 
 
-            if(Model.autoconnect)
+            if(Model.instance.autoconnect)
             {
                 
             }
@@ -60,12 +60,18 @@ namespace TINClient
                   // long running code
                   DoWork();
               }).Start();*/
-            if (Model.connectionThread == null)
+            if (Model.instance.connectionThread == null)
             { 
-                Model.connectionThread = new Thread(Model.logicLayer.Run);
-                Model.connectionThread.Start();
+                Model.instance.connectionThread = new Thread(Model.instance.logicLayer.Run);
+                Model.instance.connectionThread.Start();
             }
             return StartCommandResult.Sticky;
+        }
+
+        public override void OnDestroy()
+        {
+            Model.Serialize(Model.savePath);
+            base.OnDestroy();
         }
 
 

@@ -40,11 +40,13 @@ namespace TINClient
 
             OK.Click += delegate
             {
-                if (Model.logicLayer != null)
+                if (Model.instance.logicLayer != null)
                 {
-                    Model.username = Encoding.ASCII.GetBytes(usernameText.Text);
-                    Model.password = Encoding.ASCII.GetBytes(passwordText.Text);
-                    Model.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
+                    Model.instance.username = Encoding.ASCII.GetBytes(usernameText.Text);
+                    Model.instance.password = Encoding.ASCII.GetBytes(passwordText.Text);
+                    Model.instance.serwerAddress = new InetSocketAddress(InetAddress.GetByName(addressText.Text), Int32.Parse(portText.Text));
+                    Model.instance.port= Int32.Parse(portText.Text);
+                    Model.instance.address= Encoding.ASCII.GetBytes(addressText.Text);
                 }
 
                 // connectionThread.Join();
@@ -55,13 +57,13 @@ namespace TINClient
         protected override void OnResume()
         {
             base.OnResume();
-            if (Model.username != null)
-                usernameText.Text = Encoding.ASCII.GetString(Model.username);
-            if(Model.password!=null)
-                passwordText.Text = Encoding.ASCII.GetString(Model.password);
-            if(Model.serwerAddress!=null)
-                {portText.Text = Model.serwerAddress.Port.ToString();
-                addressText.Text = Model.serwerAddress.Address.ToString();}
+            if (Model.instance.username != null)
+                usernameText.Text = Encoding.ASCII.GetString(Model.instance.username);
+            if(Model.instance.password!=null)
+                passwordText.Text = Encoding.ASCII.GetString(Model.instance.password);
+            if(Model.instance.serwerAddress!=null)
+                portText.Text = Model.instance.serwerAddress.Port.ToString();
+            addressText.Text = Encoding.ASCII.GetString(Model.instance.address);
             
         }
     }

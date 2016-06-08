@@ -18,6 +18,11 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="Settings" />
+    <Button
+        android:text="Files"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/Files" />
     <TextView
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:layout_width="match_parent"
