@@ -67,6 +67,7 @@ namespace TINClient
         }
         Model()
         {
+            Model.instance.logicLayer = new LogicLayer();
             // Initialize.
         }
 

@@ -42,7 +42,7 @@ namespace TINClient
 
 
 
-            Model.instance.logicLayer = new LogicLayer();
+            
 
 
             if(Model.instance.autoconnect)
@@ -60,11 +60,11 @@ namespace TINClient
                   // long running code
                   DoWork();
               }).Start();*/
-            if (Model.instance.connectionThread == null)
-            { 
-                Model.instance.connectionThread = new Thread(Model.instance.logicLayer.Run);
-                Model.instance.connectionThread.Start();
-            }
+          //  if (Model.instance.connectionThread == null)
+          //  { 
+          //      Model.instance.connectionThread = new Thread(Model.instance.logicLayer.Run);
+          //      Model.instance.connectionThread.Start();
+          //  }
             return StartCommandResult.Sticky;
         }
 

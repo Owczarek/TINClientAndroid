@@ -20,11 +20,11 @@ namespace TINClient
         Button Add;
         Button Remove;
         ListView list;
-        protected override void OnCreate(Bundle savedInstanceState)
+
+        protected override void OnCreate(Bundle bundle)
         {
-            base.OnCreate(savedInstanceState);
 
-
+            base.OnCreate(bundle);
 
 
             // Create your application here

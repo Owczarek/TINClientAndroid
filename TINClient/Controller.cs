@@ -132,11 +132,13 @@ namespace TINClient
                         SendFile(path);
                     }
                     Model.instance.connectionState = State.Logged;
-                
+                    Model.instance.connectionThread = null;
+
             }
             catch (System.Exception e)
             {
                 string exception = e.Message;
+                Model.instance.connectionState = State.Disconnected;
                 Disconnect();
             }
 
@@ -183,7 +185,7 @@ namespace TINClient
             int timestamp=(int)File.GetLastWriteTimeUtc(patch).Subtract(new System.DateTime(1970, 1, 1)).TotalSeconds;
             int length =(int) new FileInfo(patch).Length;
 
-            byte[] message = new byte[Model.instance.username.Length + Model.instance.password.Length + 4 + 4 + 2];
+            byte[] message = new byte[patch.Length + Model.instance.machinename.Length + 4 + 4 + 2];
 
             Encoding.ASCII.GetBytes(patch).CopyTo(message, 0);
             Model.instance.machinename.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length+1);
