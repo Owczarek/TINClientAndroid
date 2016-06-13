@@ -29,6 +29,11 @@ namespace TINClient
             {
                 Selector selector = Selector.Open();
 
+                Model.instance.interruptPipe = Pipe.Open();
+                Model.instance.interruptPipeSource = Model.instance.interruptPipe.Source();
+                Model.instance.interruptPipeSink = Model.instance.interruptPipe.Sink();
+                Model.instance.interruptPipeSource.ConfigureBlocking(false);
+
                 Pipe.SourceChannel intPipeSource = Model.instance.interruptPipe.Source();
                 intPipeSource.ConfigureBlocking(false);
                 intPipeKey = intPipeSource.Register(selector, Operations.Read);
@@ -140,6 +145,8 @@ namespace TINClient
                 string exception = e.Message;
                 Model.instance.connectionState = State.Disconnected;
                 Disconnect();
+                if (Model.instance.mainActivity != null)
+                    Model.instance.mainActivity.Output(exception);
             }
 
 
@@ -164,14 +171,17 @@ namespace TINClient
             SendFrame(0, Model.instance.username);//or + \0
             byte[] message;
             if(ReciveFrame(out message) !=1)
-                throw (new System.Exception("wrong message type"));
-
-
-            byte[] responseValue = new byte[Model.instance.password.Length + message.Length];
-            Model.instance.password.CopyTo(responseValue, 0);
-            message.CopyTo(responseValue, Model.instance.password.Length);
+                throw (new System.Exception("wrong message type recived"));
 
             MD5 md5 = MD5.Create();
+            byte[] hash = md5.ComputeHash(Model.instance.password);
+
+
+            byte[] responseValue = new byte[hash.Length + message.Length];
+            Model.instance.password.CopyTo(responseValue, 0);
+            message.CopyTo(responseValue, hash.Length);
+
+            
             byte[] response = md5.ComputeHash(responseValue);
 
             SendFrame(2, response);
@@ -198,8 +208,8 @@ namespace TINClient
             intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 2 + Model.instance.machinename.Length);
 
             intBytes = System.BitConverter.GetBytes(timestamp);
-            if (System.BitConverter.IsLittleEndian)
-                System.Array.Reverse(intBytes);
+        //    if (System.BitConverter.IsLittleEndian)
+        //       System.Array.Reverse(intBytes);
             intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 6 + Model.instance.machinename.Length);
 
             SendFrame(6, message);
@@ -219,7 +229,7 @@ namespace TINClient
             {
                 using (BinaryReader br = new BinaryReader(new FileStream(patch, FileMode.Open)))
                 {
-
+                    message = new byte[System.Math.Min(Model.instance.LogicFrameSize, length - position)];
                     position+=br.Read(message, position, Model.instance.LogicFrameSize);
                     SendFrame(9, message);
                     responseType = ReciveFrame(out message);
@@ -278,11 +288,11 @@ namespace TINClient
             List<byte> publicKeyData = tcpLayer.Recive();
 
             if (modulusData[0] != 1)
-                throw (new System.Exception("security"));
+                throw (new System.Exception("security error"));
             modulusData.RemoveAt(0);
 
             if (publicKeyData[0] != 1)
-                throw (new System.Exception("security"));
+                throw (new System.Exception("security error"));
             publicKeyData.RemoveAt(0);
 
 
@@ -326,7 +336,7 @@ namespace TINClient
         {
             List<byte> message = tcpLayer.Recive();
             if (message[0] != 3)
-                throw (new System.Exception("security"));
+                throw (new System.Exception("security error"));
             message.RemoveAt(0);
             byte[] array = message.ToArray();
             byte[] decryptedMessage=symmetricDecryptor.TransformFinalBlock(array, 0, message.Count);
@@ -338,7 +348,7 @@ namespace TINClient
     }
 
 
-    internal unsafe class TCPLayer
+    internal class TCPLayer
     {
         //  unsafe struct Header
         //  {
@@ -367,7 +377,7 @@ namespace TINClient
                 foreach(SelectionKey key in selectedKeys)
                 {
                     if (key == pipeKey)
-                        throw new System.Exception("pipe");
+                        throw new System.Exception("disconnected by request");
                 }
                 socket.FinishConnect();
             }
@@ -396,7 +406,7 @@ namespace TINClient
                 }
                 if (Model.instance.mainActivity != null)
                     Model.instance.mainActivity.Output("sent " + sent + " bytes");
-                System.Threading.Thread.Sleep(1000);
+                System.Threading.Thread.Sleep(100);
             }
         }
 
@@ -423,7 +433,7 @@ namespace TINClient
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
                 foreach (SelectionKey key in selectedKeys)
                     if(key == pipeKey)
-                        throw new System.Exception("pipe");
+                        throw new System.Exception("disconnected by request");
                 socket.Write(header);
             }
             // ByteBuffer sendingBuff = ByteBuffer.Wrap(message);
@@ -434,7 +444,7 @@ namespace TINClient
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
                 foreach (SelectionKey key in selectedKeys)
                     if (key == pipeKey)
-                        throw new System.Exception("pipe");
+                        throw new System.Exception("disconnected by request");
                 socket.Write(messageBuffer);
             }
         }
@@ -469,7 +479,7 @@ namespace TINClient
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
                 foreach (SelectionKey key in selectedKeys)
                     if (key == pipeKey)
-                        throw new System.Exception("pipe");
+                        throw new System.Exception("disconnected by request");
                 socket.Read(header);
             }
             header.Rewind();
@@ -487,7 +497,7 @@ namespace TINClient
                 ICollection<SelectionKey> selectedKeys = selector.SelectedKeys();
                 foreach (SelectionKey key in selectedKeys)
                     if (key == pipeKey)
-                        throw new System.Exception("pipe");
+                        throw new System.Exception("disconnected by request");
                 socket.Read(messageFrameBuf);
             }
             messageFrameBuf.Rewind();

@@ -27,12 +27,14 @@ namespace TINClient
             StrictMode.SetThreadPolicy(policy);
 
             Model.instance.interruptPipe = Pipe.Open();
+            Model.instance.interruptPipeSource = Model.instance.interruptPipe.Source();
+            Model.instance.interruptPipeSink = Model.instance.interruptPipe.Sink();
+            Model.instance.interruptPipeSource.ConfigureBlocking(false);
             Model.instance.communicationPipe = Pipe.Open();
             Model.instance.communicationPipeSink = Model.instance.communicationPipe.Sink();
-            Model.instance.interruptPipeSink = Model.instance.interruptPipe.Sink();
+            
             Model.instance.communicationPipeSource = Model.instance.communicationPipe.Source();
-            Model.instance.interruptPipeSource = Model.instance.interruptPipe.Source();
-            Model.instance.interruptPipeSource.ConfigureBlocking(false);
+            
             Model.instance.communicationPipeSource.ConfigureBlocking(false);
 
 
@@ -137,7 +139,7 @@ namespace TINClient
 
 
 
-    [BroadcastReceiver]
+    [BroadcastReceiver(Enabled = true)]
     [IntentFilter(new[] { Intent.ActionBootCompleted })]
     class BootCompletedBroadcastMessageReceiver : BroadcastReceiver
     {

@@ -55,8 +55,8 @@ namespace TINClient
                                 myFileStream.Close();
                             }
                         }
-                        
-                        
+
+                        Instance.logicLayer = new LogicLayer();
                         Instance.serwerAddress = new InetSocketAddress(InetAddress.GetByName(Encoding.ASCII.GetString(Instance.address)), Instance.port);
 
                     }
@@ -67,7 +67,7 @@ namespace TINClient
         }
         Model()
         {
-            Model.instance.logicLayer = new LogicLayer();
+            
             // Initialize.
         }
 
@@ -90,8 +90,8 @@ namespace TINClient
         public LogicLayer logicLayer;
         [XmlIgnore]
         public Thread connectionThread;
-        public int FrameSize=30;
-        public int LogicFrameSize = 300;
+        public int FrameSize=50;
+        public int LogicFrameSize = 1000;
         [XmlIgnore]
         public MainActivity mainActivity;
 
