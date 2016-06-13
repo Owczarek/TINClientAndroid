@@ -178,7 +178,7 @@ namespace TINClient
 
 
             byte[] responseValue = new byte[hash.Length + message.Length];
-            Model.instance.password.CopyTo(responseValue, 0);
+            hash.CopyTo(responseValue, 0);
             message.CopyTo(responseValue, hash.Length);
 
             
@@ -208,8 +208,8 @@ namespace TINClient
             intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 2 + Model.instance.machinename.Length);
 
             intBytes = System.BitConverter.GetBytes(timestamp);
-        //    if (System.BitConverter.IsLittleEndian)
-        //       System.Array.Reverse(intBytes);
+            if (System.BitConverter.IsLittleEndian)
+               System.Array.Reverse(intBytes);
             intBytes.CopyTo(message, Encoding.ASCII.GetBytes(patch).Length + 6 + Model.instance.machinename.Length);
 
             SendFrame(6, message);
@@ -230,7 +230,7 @@ namespace TINClient
                 using (BinaryReader br = new BinaryReader(new FileStream(patch, FileMode.Open)))
                 {
                     message = new byte[System.Math.Min(Model.instance.LogicFrameSize, length - position)];
-                    position+=br.Read(message, position, Model.instance.LogicFrameSize);
+                    position+=br.Read(message, position, System.Math.Min(Model.instance.LogicFrameSize, length - position));
                     SendFrame(9, message);
                     responseType = ReciveFrame(out message);
                     if(responseType!= 10)

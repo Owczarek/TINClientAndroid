@@ -58,7 +58,7 @@ namespace TINClient
 
                         Instance.logicLayer = new LogicLayer();
                         Instance.serwerAddress = new InetSocketAddress(InetAddress.GetByName(Encoding.ASCII.GetString(Instance.address)), Instance.port);
-
+                        Instance.machinename = Encoding.ASCII.GetBytes(Android.OS.Build.Model);
                     }
                     return Instance;
                 }
@@ -91,6 +91,7 @@ namespace TINClient
         [XmlIgnore]
         public Thread connectionThread;
         public int FrameSize=50;
+        [XmlIgnore]
         public int LogicFrameSize = 1000;
         [XmlIgnore]
         public MainActivity mainActivity;
@@ -101,6 +102,7 @@ namespace TINClient
         public byte[] username= {(byte)'a',(byte)'b' };//should be initialized from conf file
         public byte[] password= {(byte)'a',(byte)'b', (byte)'c' };//without /0
         public List<string> files;
+        [XmlIgnore]
         public byte[]  machinename = { (byte)'x', (byte)'y', (byte)'z' };//without /0
         public DateTime timeLastSynchronized = DateTime.Now.AddHours(-1);
         public bool autoconnect=true;
